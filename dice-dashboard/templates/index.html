@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ .title }}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="app-shell">
+        <header class="hero">
+            <div>
+                <p class="eyebrow">Distributed Systems Project</p>
+                <h1>Dice Distributed KV Store Dashboard</h1>
+                <p class="subtitle">
+                    Web dashboard mô phỏng cụm Master - Replica cho DiceDB, hỗ trợ theo dõi node,
+                    heartbeat, replication và thao tác key-value theo thời gian thực.
+                </p>
+            </div>
+            <div class="hero-badge">
+                <span class="badge-dot"></span>
+                <span id="storageMode">Loading storage mode...</span>
+            </div>
+        </header>
+
+        <main class="dashboard-grid">
+            <section class="panel panel-overview full-width">
+                <div class="panel-header">
+                    <h2>Dashboard Overview</h2>
+                    <span id="lastRefreshLabel" class="muted">Đang đồng bộ...</span>
+                </div>
+                <div class="stats-grid">
+                    <article class="stat-card">
+                        <span class="stat-label">Tổng số node</span>
+                        <strong id="totalNodes">0</strong>
+                    </article>
+                    <article class="stat-card">
+                        <span class="stat-label">Node Online</span>
+                        <strong id="nodeOnline">0</strong>
+                    </article>
+                    <article class="stat-card">
+                        <span class="stat-label">Node Offline</span>
+                        <strong id="nodeOffline">0</strong>
+                    </article>
+                    <article class="stat-card">
+                        <span class="stat-label">Tổng số Key</span>
+                        <strong id="totalKeys">0</strong>
+                    </article>
+                    <article class="stat-card accent-card">
+                        <span class="stat-label">Last Updated</span>
+                        <strong id="lastUpdated">--</strong>
+                    </article>
+                </div>
+            </section>
+
+            <section class="panel two-columns">
+                <div class="panel-header">
+                    <h2>Cluster Nodes</h2>
+                    <span class="muted">Master + 2 Replica</span>
+                </div>
+                <div id="nodeCards" class="node-grid"></div>
+            </section>
+
+            <section class="panel two-columns">
+                <div class="panel-header">
+                    <h2>Key-Value Management</h2>
+                    <span class="muted">REST API thao tác trực tiếp</span>
+                </div>
+                <form id="kvForm" class="kv-form">
+                    <label>
+                        <span>Key</span>
+                        <input type="text" id="keyInput" placeholder="Ví dụ: user:1001" required>
+                    </label>
+                    <label>
+                        <span>Value</span>
+                        <textarea id="valueInput" rows="4" placeholder="Nhập giá trị cho key"></textarea>
+                    </label>
+                    <div class="button-group">
+                        <button type="submit" data-action="set" class="btn btn-primary">SET</button>
+                        <button type="button" data-action="get" class="btn btn-outline">GET</button>
+                        <button type="button" data-action="delete" class="btn btn-accent">DELETE</button>
+                    </div>
+                </form>
+                <div id="kvResult" class="result-box">Kết quả thao tác sẽ hiển thị tại đây.</div>
+            </section>
+
+            <section class="panel two-columns">
+                <div class="panel-header">
+                    <h2>Replication Monitor</h2>
+                    <span class="muted">Mô phỏng Master → Replica</span>
+                </div>
+                <div class="replication-flow">
+                    <div class="flow-node master">Master</div>
+                    <div class="flow-line"></div>
+                    <div class="flow-stack">
+                        <div class="flow-node replica">Replica 1</div>
+                        <div class="flow-node replica">Replica 2</div>
+                    </div>
+                </div>
+                <div id="replicationLog" class="log-list compact-list"></div>
+            </section>
+
+            <section class="panel two-columns">
+                <div class="panel-header">
+                    <h2>Heartbeat Monitor</h2>
+                    <span class="muted">Offline nếu quá timeout</span>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Node</th>
+                                <th>Last Heartbeat</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="heartbeatTable"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="panel full-width">
+                <div class="panel-header">
+                    <h2>Activity Log</h2>
+                    <span class="muted">SET, GET, DELETE, Replication, Heartbeat</span>
+                </div>
+                <div id="activityLog" class="log-list"></div>
+            </section>
+        </main>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
