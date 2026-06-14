@@ -8,7 +8,7 @@ import (
 	"log/slog"
 	"strings"
 	"time"
-
+        "github.com/dicedb/dice/monitoring"
 	"github.com/dgryski/go-farm"
 	"github.com/dicedb/dice/internal/errors"
 	"github.com/dicedb/dice/internal/object"
@@ -59,6 +59,24 @@ func (c *Cmd) Execute(sm *shardmanager.ShardManager) (*CmdRes, error) {
 	}
 
 	res, err = c.Meta.Execute(c, sm)
+        monitoring.Mu.Lock()
+
+node, exists := monitoring.Nodes["local"]
+
+if !exists {
+        node = &monitoring.NodeStatus{
+                ID:       "local",
+                Status:   "online",
+                LastSeen: time.Now(),
+        }
+
+        monitoring.Nodes["local"] = node
+}
+
+node.CommandsSynced++
+node.LastSeen = time.Now()
+
+monitoring.Mu.Unlock()
 	slog.Debug("command executed",
 		slog.Any("cmd", c.String()),
 		slog.String("client_id", c.ClientID),
