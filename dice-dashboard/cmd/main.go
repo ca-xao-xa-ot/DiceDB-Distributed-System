@@ -18,7 +18,7 @@ func main() {
 	router.Static("/static", "./static")
 
 	kvStore := services.NewKVStoreFromEnv()
-	clusterService := services.NewClusterService(kvStore, 8*time.Second)
+	clusterService := services.NewClusterService(kvStore, 10*time.Second)
 	clusterService.StartHeartbeatSimulation()
 
 	pageHandler := handlers.NewPageHandler(clusterService)

@@ -82,6 +82,14 @@ body {
     background: var(--primary-dark);
 }
 
+.status-pill.status-online .status-dot {
+    background: #1f9d48;
+}
+
+.status-pill.status-offline .status-dot {
+    background: #d62828;
+}
+
 .dashboard-grid {
     display: grid;
     grid-template-columns: repeat(12, 1fr);
@@ -198,8 +206,8 @@ body {
 }
 
 .status-offline {
-    background: #fff2f6;
-    color: #bf4a74;
+    background: #fff1f1;
+    color: #d62828;
 }
 
 .node-meta {
@@ -371,6 +379,10 @@ th {
     font-size: 14px;
 }
 
+.activity-line {
+    grid-template-columns: 110px 1fr;
+}
+
 .log-item:last-child {
     border-bottom: none;
 }
@@ -388,6 +400,11 @@ th {
 .log-badge.delete {
     background: #fff1f6;
     color: #b44c72;
+}
+
+.log-badge.heartbeat {
+    background: #eefbea;
+    color: #258d3f;
 }
 
 .empty-state {
@@ -425,7 +442,8 @@ th {
         grid-template-columns: 1fr;
     }
 
-    .log-item {
+    .log-item,
+    .activity-line {
         grid-template-columns: 1fr;
     }
 

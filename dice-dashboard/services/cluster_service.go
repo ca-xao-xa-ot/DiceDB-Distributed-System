@@ -2,12 +2,11 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/rand"
 	"sync"
 	"time"
-
-	"github.com/redis/go-redis/v9"
 )
 
 type ClusterService struct {
@@ -25,9 +24,9 @@ func NewClusterService(store KVStore, timeout time.Duration) *ClusterService {
 		store:            store,
 		heartbeatTimeout: timeout,
 		nodes: []Node{
-			{Name: "Master Node", Role: "master", Port: 7379, Status: "Online", KeyCount: 0, MemoryUsage: "24 MB", LastHeartbeat: now},
-			{Name: "Replica Node 1", Role: "replica", Port: 7380, Status: "Online", KeyCount: 0, MemoryUsage: "18 MB", LastHeartbeat: now},
-			{Name: "Replica Node 2", Role: "replica", Port: 7381, Status: "Online", KeyCount: 0, MemoryUsage: "19 MB", LastHeartbeat: now},
+			{Name: "Master", Role: "master", Port: 7379, Status: "Online", KeyCount: 0, MemoryUsage: "24 MB", LastHeartbeat: now},
+			{Name: "Replica1", Role: "replica", Port: 7380, Status: "Online", KeyCount: 0, MemoryUsage: "18 MB", LastHeartbeat: now},
+			{Name: "Replica2", Role: "replica", Port: 7381, Status: "Online", KeyCount: 0, MemoryUsage: "19 MB", LastHeartbeat: now},
 		},
 		activityLogs:    make([]ActivityLog, 0, 64),
 		replicationLogs: make([]ReplicationLog, 0, 64),
@@ -66,7 +65,7 @@ func (s *ClusterService) tickHeartbeat() {
 		if shouldBeat {
 			s.nodes[i].LastHeartbeat = now
 			s.nodes[i].Status = "Online"
-			s.appendActivityLocked("HEARTBEAT", fmt.Sprintf("%s gửi heartbeat lúc %s", s.nodes[i].Name, now.Format("15:04:05")))
+			s.appendActivityLocked("HEARTBEAT", fmt.Sprintf("%s heartbeat received", s.nodes[i].Name))
 		}
 
 		if now.Sub(s.nodes[i].LastHeartbeat) > s.heartbeatTimeout {
@@ -98,7 +97,7 @@ func (s *ClusterService) Get(key string) (string, error) {
 
 	value, err := s.store.Get(ctx, key)
 	if err != nil {
-		if err == redis.Nil {
+		if errors.Is(err, ErrKeyNotFound) {
 			s.mu.Lock()
 			s.appendActivityLocked("GET", fmt.Sprintf("GET key '%s' không tồn tại", key))
 			s.mu.Unlock()
@@ -130,8 +129,9 @@ func (s *ClusterService) Delete(key string) error {
 }
 
 func (s *ClusterService) GetOverview() DashboardOverview {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.refreshNodeStatusesLocked()
 
 	online := 0
 	for _, node := range s.nodes {
@@ -156,16 +156,18 @@ func (s *ClusterService) GetOverview() DashboardOverview {
 }
 
 func (s *ClusterService) GetNodes() []Node {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.refreshNodeStatusesLocked()
 	result := make([]Node, len(s.nodes))
 	copy(result, s.nodes)
 	return result
 }
 
 func (s *ClusterService) GetHeartbeatRows() []HeartbeatRow {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.refreshNodeStatusesLocked()
 	rows := make([]HeartbeatRow, 0, len(s.nodes))
 	for _, node := range s.nodes {
 		rows = append(rows, HeartbeatRow{
@@ -201,6 +203,17 @@ func (s *ClusterService) refreshKeyCountLocked() {
 		s.nodes[i].KeyCount = count
 		base := 18 + count/2 + i
 		s.nodes[i].MemoryUsage = fmt.Sprintf("%d MB", base)
+	}
+}
+
+func (s *ClusterService) refreshNodeStatusesLocked() {
+	now := time.Now()
+	for i := range s.nodes {
+		if now.Sub(s.nodes[i].LastHeartbeat) > s.heartbeatTimeout {
+			s.nodes[i].Status = "Offline"
+		} else {
+			s.nodes[i].Status = "Online"
+		}
 	}
 }
 

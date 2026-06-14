@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/redis/go-redis/v9"
 
 	"dice-dashboard/services"
 )
@@ -60,7 +59,7 @@ func (h *APIHandler) GetKey(c *gin.Context) {
 	key := c.Param("key")
 	value, err := h.cluster.Get(key)
 	if err != nil {
-		if errors.Is(err, redis.Nil) {
+		if errors.Is(err, services.ErrKeyNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Không tìm thấy key"})
 			return
 		}

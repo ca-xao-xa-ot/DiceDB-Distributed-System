@@ -96,10 +96,9 @@ function renderActivity(logs) {
     }
 
     activityLog.innerHTML = logs.map((log) => `
-        <div class="log-item">
-            <div>${log.timestamp}</div>
+        <div class="log-item activity-line">
             <div class="log-badge ${log.type.toLowerCase()}">${log.type}</div>
-            <div>${log.message}</div>
+            <div>[${log.timestamp}] ${log.message}</div>
         </div>
     `).join('');
 }
