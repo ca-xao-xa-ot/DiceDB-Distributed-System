@@ -28,8 +28,8 @@ func NewClusterService(store KVStore, timeout time.Duration) *ClusterService {
 			{Name: "Replica1", Role: "replica", Port: 7380, Status: "Online", KeyCount: 0, MemoryUsage: "18 MB", LastHeartbeat: now},
 			{Name: "Replica2", Role: "replica", Port: 7381, Status: "Online", KeyCount: 0, MemoryUsage: "19 MB", LastHeartbeat: now},
 		},
-		activityLogs:    make([]ActivityLog, 0, 64),
-		replicationLogs: make([]ReplicationLog, 0, 64),
+		activityLogs:    make([]ActivityLog, 0, 128),
+		replicationLogs: make([]ReplicationLog, 0, 128),
 	}
 
 	s.seedData()
@@ -37,9 +37,14 @@ func NewClusterService(store KVStore, timeout time.Duration) *ClusterService {
 }
 
 func (s *ClusterService) seedData() {
-	_ = s.Set("project:title", "Dice Distributed KV Store Dashboard")
-	_ = s.Set("project:course", "He Phan Tan")
-	_ = s.Set("cluster:mode", "Master-Replica Simulation")
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	_ = s.store.Set(ctx, "project:title", "Dice Distributed KV Store Dashboard")
+	_ = s.store.Set(ctx, "project:course", "He Phan Tan")
+	_ = s.store.Set(ctx, "cluster:mode", "Master-Replica Simulation")
+	s.mu.Lock()
+	s.refreshKeyCountLocked()
+	s.mu.Unlock()
 }
 
 func (s *ClusterService) StartHeartbeatSimulation() {
@@ -58,8 +63,11 @@ func (s *ClusterService) tickHeartbeat() {
 	now := time.Now()
 	for i := range s.nodes {
 		shouldBeat := true
-		if i > 0 {
-			shouldBeat = rand.Intn(100) > 18
+		switch s.nodes[i].Name {
+		case "Replica1":
+			shouldBeat = rand.Intn(100) > 22
+		case "Replica2":
+			shouldBeat = rand.Intn(100) > 45
 		}
 
 		if shouldBeat {
@@ -67,11 +75,9 @@ func (s *ClusterService) tickHeartbeat() {
 			s.nodes[i].Status = "Online"
 			s.appendActivityLocked("HEARTBEAT", fmt.Sprintf("%s heartbeat received", s.nodes[i].Name))
 		}
-
-		if now.Sub(s.nodes[i].LastHeartbeat) > s.heartbeatTimeout {
-			s.nodes[i].Status = "Offline"
-		}
 	}
+
+	s.refreshNodeStatusesLocked()
 }
 
 func (s *ClusterService) Set(key, value string) error {
@@ -85,9 +91,9 @@ func (s *ClusterService) Set(key, value string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.refreshKeyCountLocked()
-	s.appendActivityLocked("SET", fmt.Sprintf("SET key '%s' = '%s'", key, value))
-	s.appendReplicationLocked("Replica Node 1", "SET", fmt.Sprintf("Replicated to Replica1: key '%s'", key))
-	s.appendReplicationLocked("Replica Node 2", "SET", fmt.Sprintf("Replicated to Replica2: key '%s'", key))
+	s.appendActivityLocked("SET", fmt.Sprintf("SET %s=%s", key, value))
+	s.appendReplicationLocked("Replica1", "SET", "Replicated to Replica1")
+	s.appendReplicationLocked("Replica2", "SET", "Replicated to Replica2")
 	return nil
 }
 
@@ -99,14 +105,14 @@ func (s *ClusterService) Get(key string) (string, error) {
 	if err != nil {
 		if errors.Is(err, ErrKeyNotFound) {
 			s.mu.Lock()
-			s.appendActivityLocked("GET", fmt.Sprintf("GET key '%s' không tồn tại", key))
+			s.appendActivityLocked("GET", fmt.Sprintf("GET %s not found", key))
 			s.mu.Unlock()
 		}
 		return "", err
 	}
 
 	s.mu.Lock()
-	s.appendActivityLocked("GET", fmt.Sprintf("GET key '%s' -> '%s'", key, value))
+	s.appendActivityLocked("GET", fmt.Sprintf("GET %s=%s", key, value))
 	s.mu.Unlock()
 	return value, nil
 }
@@ -122,9 +128,9 @@ func (s *ClusterService) Delete(key string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.refreshKeyCountLocked()
-	s.appendActivityLocked("DELETE", fmt.Sprintf("DELETE key '%s'", key))
-	s.appendReplicationLocked("Replica Node 1", "DELETE", fmt.Sprintf("Replicated to Replica1: deleted key '%s'", key))
-	s.appendReplicationLocked("Replica Node 2", "DELETE", fmt.Sprintf("Replicated to Replica2: deleted key '%s'", key))
+	s.appendActivityLocked("DELETE", fmt.Sprintf("DELETE %s", key))
+	s.appendReplicationLocked("Replica1", "DELETE", "Delete replicated to Replica1")
+	s.appendReplicationLocked("Replica2", "DELETE", "Delete replicated to Replica2")
 	return nil
 }
 
@@ -191,6 +197,13 @@ func (s *ClusterService) GetReplicationLogs(limit int) []ReplicationLog {
 	return reverseLimitReplication(s.replicationLogs, limit)
 }
 
+func (s *ClusterService) ClearLogs() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.activityLogs = make([]ActivityLog, 0, 128)
+	s.replicationLogs = make([]ReplicationLog, 0, 128)
+}
+
 func (s *ClusterService) refreshKeyCountLocked() {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -209,11 +222,16 @@ func (s *ClusterService) refreshKeyCountLocked() {
 func (s *ClusterService) refreshNodeStatusesLocked() {
 	now := time.Now()
 	for i := range s.nodes {
+		nextStatus := "Online"
 		if now.Sub(s.nodes[i].LastHeartbeat) > s.heartbeatTimeout {
-			s.nodes[i].Status = "Offline"
-		} else {
-			s.nodes[i].Status = "Online"
+			nextStatus = "Offline"
 		}
+
+		if s.nodes[i].Status != nextStatus && nextStatus == "Offline" {
+			s.appendActivityLocked("TIMEOUT", fmt.Sprintf("%s timeout", s.nodes[i].Name))
+		}
+
+		s.nodes[i].Status = nextStatus
 	}
 }
 
@@ -223,8 +241,8 @@ func (s *ClusterService) appendActivityLocked(logType, message string) {
 		Type:      logType,
 		Message:   message,
 	})
-	if len(s.activityLogs) > 100 {
-		s.activityLogs = s.activityLogs[len(s.activityLogs)-100:]
+	if len(s.activityLogs) > 200 {
+		s.activityLogs = s.activityLogs[len(s.activityLogs)-200:]
 	}
 }
 

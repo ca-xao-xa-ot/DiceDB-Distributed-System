@@ -1,3 +1,6 @@
+const navItems = document.querySelectorAll('.nav-item');
+const viewSections = document.querySelectorAll('.view-section');
+
 const overviewEls = {
     totalNodes: document.getElementById('totalNodes'),
     nodeOnline: document.getElementById('nodeOnline'),
@@ -13,9 +16,24 @@ const heartbeatTable = document.getElementById('heartbeatTable');
 const activityLog = document.getElementById('activityLog');
 const replicationLog = document.getElementById('replicationLog');
 const kvResult = document.getElementById('kvResult');
-const kvForm = document.getElementById('kvForm');
+const replicationForm = document.getElementById('replicationForm');
 const keyInput = document.getElementById('keyInput');
 const valueInput = document.getElementById('valueInput');
+const clearLogBtn = document.getElementById('clearLogBtn');
+
+function showView(target) {
+    navItems.forEach((item) => {
+        item.classList.toggle('active', item.dataset.target === target);
+    });
+
+    viewSections.forEach((section) => {
+        section.classList.toggle('active', section.id === `view-${target}`);
+    });
+}
+
+navItems.forEach((item) => {
+    item.addEventListener('click', () => showView(item.dataset.target));
+});
 
 async function fetchJSON(url, options = {}) {
     const response = await fetch(url, options);
@@ -84,7 +102,11 @@ function renderHeartbeat(rows) {
         <tr>
             <td>${row.node}</td>
             <td>${row.last_heartbeat}</td>
-            <td><span class="status-pill ${statusClass(row.status)}">${row.status}</span></td>
+            <td>
+                <span class="status-pill ${statusClass(row.status)}">
+                    <span class="status-dot"></span>${row.status}
+                </span>
+            </td>
         </tr>
     `).join('');
 }
@@ -96,7 +118,7 @@ function renderActivity(logs) {
     }
 
     activityLog.innerHTML = logs.map((log) => `
-        <div class="log-item activity-line">
+        <div class="log-item">
             <div class="log-badge ${log.type.toLowerCase()}">${log.type}</div>
             <div>[${log.timestamp}] ${log.message}</div>
         </div>
@@ -111,9 +133,8 @@ function renderReplication(logs) {
 
     replicationLog.innerHTML = logs.map((log) => `
         <div class="log-item">
-            <div>${log.timestamp}</div>
-            <div class="log-badge replication">${log.action}</div>
-            <div>${log.message}</div>
+            <div class="log-badge replication">${log.target}</div>
+            <div>[${log.timestamp}] ${log.message}</div>
         </div>
     `).join('');
 }
@@ -124,8 +145,8 @@ async function refreshDashboard() {
             fetchJSON('/api/overview'),
             fetchJSON('/api/nodes'),
             fetchJSON('/api/heartbeat'),
-            fetchJSON('/api/logs?limit=20'),
-            fetchJSON('/api/replication?limit=10')
+            fetchJSON('/api/logs?limit=30'),
+            fetchJSON('/api/replication?limit=12')
         ]);
 
         renderOverview(overview);
@@ -154,53 +175,32 @@ async function handleSet(event) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ key, value })
         });
-        kvResult.textContent = JSON.stringify(data, null, 2);
+
+        kvResult.textContent = [
+            `[${new Date().toLocaleTimeString('vi-VN')}] SET ${data.key}=${data.value}`,
+            ...data.replications
+        ].join('\n');
+
         await refreshDashboard();
     } catch (error) {
         kvResult.textContent = error.message;
     }
 }
 
-async function handleGet() {
-    const key = keyInput.value.trim();
-    if (!key) {
-        kvResult.textContent = 'Vui lòng nhập Key để GET.';
-        return;
-    }
-
+async function handleClearLogs() {
     try {
-        const data = await fetchJSON(`/api/kv/${encodeURIComponent(key)}`);
-        kvResult.textContent = JSON.stringify(data, null, 2);
-        valueInput.value = data.value || '';
+        const data = await fetchJSON('/api/logs/clear', { method: 'POST' });
+        kvResult.textContent = data.message;
         await refreshDashboard();
+        showView('activity');
     } catch (error) {
         kvResult.textContent = error.message;
     }
 }
 
-async function handleDelete() {
-    const key = keyInput.value.trim();
-    if (!key) {
-        kvResult.textContent = 'Vui lòng nhập Key để DELETE.';
-        return;
-    }
+replicationForm.addEventListener('submit', handleSet);
+clearLogBtn.addEventListener('click', handleClearLogs);
 
-    try {
-        const data = await fetchJSON(`/api/kv/${encodeURIComponent(key)}`, {
-            method: 'DELETE'
-        });
-        kvResult.textContent = JSON.stringify(data, null, 2);
-        valueInput.value = '';
-        await refreshDashboard();
-    } catch (error) {
-        kvResult.textContent = error.message;
-    }
-}
-
-kvForm.addEventListener('submit', handleSet);
-
-document.querySelector('[data-action="get"]').addEventListener('click', handleGet);
-document.querySelector('[data-action="delete"]').addEventListener('click', handleDelete);
-
+showView('dashboard');
 refreshDashboard();
 setInterval(refreshDashboard, 3000);

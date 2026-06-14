@@ -35,6 +35,11 @@ func (h *APIHandler) GetLogs(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"logs": h.cluster.GetActivityLogs(limit)})
 }
 
+func (h *APIHandler) ClearLogs(c *gin.Context) {
+	h.cluster.ClearLogs()
+	c.JSON(http.StatusOK, gin.H{"message": "Đã xóa toàn bộ activity log"})
+}
+
 func (h *APIHandler) GetReplicationLogs(c *gin.Context) {
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
 	c.JSON(http.StatusOK, gin.H{"logs": h.cluster.GetReplicationLogs(limit)})
@@ -52,7 +57,12 @@ func (h *APIHandler) SetKey(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "SET thành công", "key": payload.Key, "value": payload.Value})
+	c.JSON(http.StatusOK, gin.H{
+		"message":      "SET thành công",
+		"key":          payload.Key,
+		"value":        payload.Value,
+		"replications": []string{"Replicated to Replica1", "Replicated to Replica2"},
+	})
 }
 
 func (h *APIHandler) GetKey(c *gin.Context) {

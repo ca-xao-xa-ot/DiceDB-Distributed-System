@@ -7,104 +7,171 @@
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
-    <div class="app-shell">
-        <header class="hero">
+    <aside class="sidebar">
+        <div class="brand-block">
+            <div class="brand-logo">DD</div>
             <div>
-                <p class="eyebrow">Distributed Systems Project</p>
+                <p class="brand-caption">Distributed Systems Project</p>
                 <h1>Dice Distributed KV Store Dashboard</h1>
-                <p class="subtitle">
-                    Web dashboard mô phỏng cụm Master - Replica cho DiceDB, hỗ trợ theo dõi node,
-                    heartbeat, replication và thao tác key-value theo thời gian thực.
-                </p>
             </div>
-            <div class="hero-badge">
-                <span class="badge-dot"></span>
+        </div>
+
+        <nav class="sidebar-nav">
+            <button class="nav-item active" data-target="dashboard">Dashboard</button>
+            <button class="nav-item" data-target="cluster">Cluster Nodes</button>
+            <button class="nav-item" data-target="replication">Replication Monitor</button>
+            <button class="nav-item" data-target="heartbeat">Heartbeat Monitor</button>
+            <button class="nav-item" data-target="activity">Activity Log</button>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="status-card">
+                <span class="status-dot online-dot"></span>
                 <span id="storageMode">Loading storage mode...</span>
             </div>
-        </header>
+        </div>
+    </aside>
 
-        <main class="dashboard-grid">
-            <section class="panel panel-overview full-width">
-                <div class="panel-header">
+    <main class="content-shell">
+        <section id="view-dashboard" class="view-section active">
+            <div class="section-hero">
+                <div>
+                    <p class="eyebrow">Light Theme Dashboard</p>
                     <h2>Dashboard Overview</h2>
-                    <span id="lastRefreshLabel" class="muted">Đang đồng bộ...</span>
+                    <p class="section-subtitle">
+                        Theo dõi nhanh trạng thái cluster Dice Distributed KV Store với giao diện nhiều trang,
+                        điều hướng sidebar và dữ liệu cập nhật theo thời gian thực.
+                    </p>
                 </div>
-                <div class="stats-grid">
-                    <article class="stat-card">
-                        <span class="stat-label">Tổng số node</span>
-                        <strong id="totalNodes">0</strong>
-                    </article>
-                    <article class="stat-card">
-                        <span class="stat-label">Node Online</span>
-                        <strong id="nodeOnline">0</strong>
-                    </article>
-                    <article class="stat-card">
-                        <span class="stat-label">Node Offline</span>
-                        <strong id="nodeOffline">0</strong>
-                    </article>
-                    <article class="stat-card">
-                        <span class="stat-label">Tổng số Key</span>
-                        <strong id="totalKeys">0</strong>
-                    </article>
-                    <article class="stat-card accent-card">
-                        <span class="stat-label">Last Updated</span>
-                        <strong id="lastUpdated">--</strong>
-                    </article>
+                <div class="refresh-card">
+                    <span>Lần đồng bộ gần nhất</span>
+                    <strong id="lastUpdated">--</strong>
+                    <small id="lastRefreshLabel">Đang đồng bộ...</small>
                 </div>
-            </section>
+            </div>
 
-            <section class="panel two-columns">
-                <div class="panel-header">
-                    <h2>Cluster Nodes</h2>
-                    <span class="muted">Master + 2 Replica</span>
-                </div>
-                <div id="nodeCards" class="node-grid"></div>
-            </section>
+            <div class="stats-grid">
+                <article class="stat-card">
+                    <span class="stat-label">Tổng số node</span>
+                    <strong id="totalNodes">0</strong>
+                </article>
+                <article class="stat-card">
+                    <span class="stat-label">Node Online</span>
+                    <strong id="nodeOnline">0</strong>
+                </article>
+                <article class="stat-card">
+                    <span class="stat-label">Node Offline</span>
+                    <strong id="nodeOffline">0</strong>
+                </article>
+                <article class="stat-card">
+                    <span class="stat-label">Tổng số Key</span>
+                    <strong id="totalKeys">0</strong>
+                </article>
+            </div>
 
-            <section class="panel two-columns">
-                <div class="panel-header">
-                    <h2>Key-Value Management</h2>
-                    <span class="muted">REST API thao tác trực tiếp</span>
-                </div>
-                <form id="kvForm" class="kv-form">
-                    <label>
-                        <span>Key</span>
-                        <input type="text" id="keyInput" placeholder="Ví dụ: user:1001" required>
-                    </label>
-                    <label>
-                        <span>Value</span>
-                        <textarea id="valueInput" rows="4" placeholder="Nhập giá trị cho key"></textarea>
-                    </label>
-                    <div class="button-group">
-                        <button type="submit" data-action="set" class="btn btn-primary">SET</button>
-                        <button type="button" data-action="get" class="btn btn-outline">GET</button>
-                        <button type="button" data-action="delete" class="btn btn-accent">DELETE</button>
+            <div class="dashboard-panels">
+                <article class="panel info-panel">
+                    <div class="panel-header">
+                        <h3>Kiến trúc mô phỏng</h3>
+                        <span class="tag tag-primary">MVC đơn giản</span>
                     </div>
-                </form>
-                <div id="kvResult" class="result-box">Kết quả thao tác sẽ hiển thị tại đây.</div>
-            </section>
-
-            <section class="panel two-columns">
-                <div class="panel-header">
-                    <h2>Replication Monitor</h2>
-                    <span class="muted">Mô phỏng Master → Replica</span>
-                </div>
-                <div class="replication-flow">
-                    <div class="flow-node master">Master</div>
-                    <div class="flow-line"></div>
-                    <div class="flow-stack">
-                        <div class="flow-node replica">Replica1</div>
-                        <div class="flow-node replica">Replica2</div>
+                    <p>
+                        Hệ thống mô phỏng mô hình Master - Replica với Golang, Gin và REST API.
+                        Sidebar nhiều trang giúp trình bày rõ từng thành phần khi demo trước lớp.
+                    </p>
+                </article>
+                <article class="panel info-panel accent-panel">
+                    <div class="panel-header">
+                        <h3>Realtime Monitoring</h3>
+                        <span class="tag tag-accent">JavaScript thuần</span>
                     </div>
+                    <p>
+                        Dữ liệu overview, node, heartbeat, replication và activity log được làm mới tự động,
+                        không cần reload toàn trang.
+                    </p>
+                </article>
+            </div>
+        </section>
+
+        <section id="view-cluster" class="view-section">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">Cluster Nodes</p>
+                    <h2>Chi tiết các node trong cluster</h2>
+                </div>
+            </div>
+            <div id="nodeCards" class="node-grid"></div>
+        </section>
+
+        <section id="view-replication" class="view-section">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">Replication Monitor</p>
+                    <h2>Mô phỏng Master → Replica</h2>
+                </div>
+            </div>
+
+            <div class="replication-layout">
+                <article class="panel">
+                    <div class="lane-group">
+                        <div class="replication-lane transmitting">
+                            <div class="flow-node master-node">Master</div>
+                            <div class="flow-track vertical-track">
+                                <span class="flow-packet"></span>
+                            </div>
+                            <div class="flow-node replica-node">Replica1</div>
+                        </div>
+
+                        <div class="replication-lane transmitting delay-lane">
+                            <div class="flow-node master-node">Master</div>
+                            <div class="flow-track vertical-track">
+                                <span class="flow-packet"></span>
+                            </div>
+                            <div class="flow-node replica-node">Replica2</div>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="panel">
+                    <div class="panel-header">
+                        <h3>Replication SET</h3>
+                        <span class="tag tag-accent">Key-Value Form</span>
+                    </div>
+                    <form id="replicationForm" class="kv-form">
+                        <label>
+                            <span>Key</span>
+                            <input type="text" id="keyInput" placeholder="Ví dụ: student" required>
+                        </label>
+                        <label>
+                            <span>Value</span>
+                            <textarea id="valueInput" rows="4" placeholder="Ví dụ: Giang" required></textarea>
+                        </label>
+                        <div class="button-group">
+                            <button type="submit" class="btn btn-primary">SET</button>
+                        </div>
+                    </form>
+                    <div id="kvResult" class="result-box">Kết quả replication sẽ hiển thị tại đây.</div>
+                </article>
+            </div>
+
+            <article class="panel replication-log-panel">
+                <div class="panel-header">
+                    <h3>Replication Events</h3>
+                    <span class="muted">Log mới nhất hiển thị trên cùng</span>
                 </div>
                 <div id="replicationLog" class="log-list compact-list"></div>
-            </section>
+            </article>
+        </section>
 
-            <section class="panel two-columns">
-                <div class="panel-header">
-                    <h2>Heartbeat Monitor</h2>
-                    <span class="muted">Offline nếu quá 10 giây</span>
+        <section id="view-heartbeat" class="view-section">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">Heartbeat Monitor</p>
+                    <h2>Trạng thái heartbeat của cluster</h2>
                 </div>
+                <span class="muted">Offline nếu heartbeat quá 10 giây</span>
+            </div>
+            <article class="panel">
                 <div class="table-wrap">
                     <table>
                         <thead>
@@ -117,17 +184,22 @@
                         <tbody id="heartbeatTable"></tbody>
                     </table>
                 </div>
-            </section>
+            </article>
+        </section>
 
-            <section class="panel full-width">
-                <div class="panel-header">
-                    <h2>Activity Log</h2>
-                    <span class="muted">SET, GET, DELETE, Replication, Heartbeat</span>
+        <section id="view-activity" class="view-section">
+            <div class="section-heading activity-heading">
+                <div>
+                    <p class="eyebrow">Activity Log</p>
+                    <h2>Log thời gian thực</h2>
                 </div>
-                <div id="activityLog" class="log-list"></div>
-            </section>
-        </main>
-    </div>
+                <button id="clearLogBtn" class="btn btn-outline">Clear Log</button>
+            </div>
+            <article class="panel">
+                <div id="activityLog" class="log-list activity-list"></div>
+            </article>
+        </section>
+    </main>
 
     <script src="/static/js/app.js"></script>
 </body>
