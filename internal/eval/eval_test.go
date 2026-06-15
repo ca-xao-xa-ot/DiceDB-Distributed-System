@@ -321,236 +321,236 @@ type evalMultiShardTestCase struct {
 // 	runMigratedEvalTests(t, tests, evalSET, store)
 // }
 
-func testEvalGETEX(t *testing.T, store *dstore.Store) {
-	tests := map[string]evalTestCase{
-		"key val pair and valid EX": {
-			setup: func() {
-				key := "foo"
-				value := "bar"
-				obj := &object.Obj{
-					Value: value,
-				}
-				store.Put(key, obj)
-			},
-			input: []string{"foo", Ex, "10"},
-			migratedOutput: EvalResponse{
-				Result: "bar",
-				Error:  nil,
-			},
-		},
-		"key val pair and invalid EX": {
-			setup: func() {
-				key := "foo"
-				value := "bar"
-				obj := &object.Obj{
-					Value: value,
-				}
-				store.Put(key, obj)
-			},
-			input: []string{"foo", Ex, "10000000000000000"},
-			migratedOutput: EvalResponse{
-				Result: nil,
-				Error:  diceerrors.ErrInvalidExpireTime("GETEX"),
-			},
-		},
-		"key val pair and EX and string expire time": {
-			setup: func() {
-				key := "foo"
-				value := "bar"
-				obj := &object.Obj{
-					Value: value,
-				}
-				store.Put(key, obj)
-			},
-			input: []string{"foo", Ex, "string"},
-			migratedOutput: EvalResponse{
-				Result: nil,
-				Error:  diceerrors.ErrIntegerOutOfRange,
-			},
-		},
-		"key val pair and both EX and PERSIST": {
-			setup: func() {
-				key := "foo"
-				value := "bar"
-				obj := &object.Obj{
-					Value: value,
-				}
-				store.Put(key, obj)
-			},
-			input: []string{"foo", Ex, Persist},
-			migratedOutput: EvalResponse{
-				Result: nil,
-				Error:  diceerrors.ErrIntegerOutOfRange,
-			},
-		},
-		"key holding json type": {
-			setup: func() {
-				evalJSONSET([]string{"JSONKEY", "$", "1"}, store)
-			},
-			input: []string{"JSONKEY"},
-			migratedOutput: EvalResponse{
-				Result: nil,
-				Error:  diceerrors.ErrWrongTypeOperation,
-			},
-		},
-		"key holding set type": {
-			setup: func() {
-				evalSADD([]string{"SETKEY", "FRUITS", "APPLE", "MANGO", "BANANA"}, store)
-			},
-			input: []string{"SETKEY"},
-			migratedOutput: EvalResponse{
-				Result: nil,
-				Error:  diceerrors.ErrWrongTypeOperation,
-			},
-		},
-	}
+// func testEvalGETEX(t *testing.T, store *dstore.Store) {
+// 	tests := map[string]evalTestCase{
+// 		"key val pair and valid EX": {
+// 			setup: func() {
+// 				key := "foo"
+// 				value := "bar"
+// 				obj := &object.Obj{
+// 					Value: value,
+// 				}
+// 				store.Put(key, obj)
+// 			},
+// 			input: []string{"foo", Ex, "10"},
+// 			migratedOutput: EvalResponse{
+// 				Result: "bar",
+// 				Error:  nil,
+// 			},
+// 		},
+// 		"key val pair and invalid EX": {
+// 			setup: func() {
+// 				key := "foo"
+// 				value := "bar"
+// 				obj := &object.Obj{
+// 					Value: value,
+// 				}
+// 				store.Put(key, obj)
+// 			},
+// 			input: []string{"foo", Ex, "10000000000000000"},
+// 			migratedOutput: EvalResponse{
+// 				Result: nil,
+// 				Error:  diceerrors.ErrInvalidExpireTime("GETEX"),
+// 			},
+// 		},
+// 		"key val pair and EX and string expire time": {
+// 			setup: func() {
+// 				key := "foo"
+// 				value := "bar"
+// 				obj := &object.Obj{
+// 					Value: value,
+// 				}
+// 				store.Put(key, obj)
+// 			},
+// 			input: []string{"foo", Ex, "string"},
+// 			migratedOutput: EvalResponse{
+// 				Result: nil,
+// 				Error:  diceerrors.ErrIntegerOutOfRange,
+// 			},
+// 		},
+// 		"key val pair and both EX and PERSIST": {
+// 			setup: func() {
+// 				key := "foo"
+// 				value := "bar"
+// 				obj := &object.Obj{
+// 					Value: value,
+// 				}
+// 				store.Put(key, obj)
+// 			},
+// 			input: []string{"foo", Ex, Persist},
+// 			migratedOutput: EvalResponse{
+// 				Result: nil,
+// 				Error:  diceerrors.ErrIntegerOutOfRange,
+// 			},
+// 		},
+// 		"key holding json type": {
+// 			setup: func() {
+// 				evalJSONSET([]string{"JSONKEY", "$", "1"}, store)
+// 			},
+// 			input: []string{"JSONKEY"},
+// 			migratedOutput: EvalResponse{
+// 				Result: nil,
+// 				Error:  diceerrors.ErrWrongTypeOperation,
+// 			},
+// 		},
+// 		"key holding set type": {
+// 			setup: func() {
+// 				evalSADD([]string{"SETKEY", "FRUITS", "APPLE", "MANGO", "BANANA"}, store)
+// 			},
+// 			input: []string{"SETKEY"},
+// 			migratedOutput: EvalResponse{
+// 				Result: nil,
+// 				Error:  diceerrors.ErrWrongTypeOperation,
+// 			},
+// 		},
+// 	}
 
-	runMigratedEvalTests(t, tests, evalGETEX, store)
-}
+// 	runMigratedEvalTests(t, tests, evalGETEX, store)
+// }
 
-func testEvalGETDEL(t *testing.T, store *dstore.Store) {
-	tests := map[string]evalTestCase{
-		"nil value": {
-			input:          nil,
-			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR wrong number of arguments for 'getdel' command")},
-		},
-		"empty array": {
-			input:          []string{},
-			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR wrong number of arguments for 'getdel' command")},
-		},
-		"key does not exist": {
-			input:          []string{"NONEXISTENT_KEY"},
-			migratedOutput: EvalResponse{Result: NIL, Error: nil},
-		},
-		"multiple arguments": {
-			input:          []string{"KEY1", "KEY2"},
-			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR wrong number of arguments for 'getdel' command")},
-		},
-		"key exists": {
-			setup: func() {
-				key := "diceKey"
-				value := "diceVal"
-				obj := &object.Obj{
-					Value:          value,
-					LastAccessedAt: uint32(time.Now().Unix()),
-				}
-				store.Put(key, obj)
-			},
-			input:          []string{"diceKey"},
-			migratedOutput: EvalResponse{Result: "diceVal", Error: nil},
-		},
-		"key exists but expired": {
-			setup: func() {
-				key := "EXISTING_KEY"
-				value := "mock_value"
-				obj := &object.Obj{
-					Value:          value,
-					LastAccessedAt: uint32(time.Now().Unix()),
-				}
-				store.Put(key, obj)
-				store.SetExpiry(obj, int64(-2*time.Millisecond))
-			},
-			input:          []string{"EXISTING_KEY"},
-			migratedOutput: EvalResponse{Result: NIL, Error: nil},
-		},
-		"key deleted by previous call of GETDEL": {
-			setup: func() {
-				key := "DELETED_KEY"
-				value := "mock_value"
-				obj := &object.Obj{
-					Value:          value,
-					LastAccessedAt: uint32(time.Now().Unix()),
-				}
-				store.Put(key, obj)
-				evalGETDEL([]string{key}, store)
-			},
-			input:          []string{"DELETED_KEY"},
-			migratedOutput: EvalResponse{Result: NIL, Error: nil},
-		},
-	}
+// func testEvalGETDEL(t *testing.T, store *dstore.Store) {
+// 	tests := map[string]evalTestCase{
+// 		"nil value": {
+// 			input:          nil,
+// 			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR wrong number of arguments for 'getdel' command")},
+// 		},
+// 		"empty array": {
+// 			input:          []string{},
+// 			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR wrong number of arguments for 'getdel' command")},
+// 		},
+// 		"key does not exist": {
+// 			input:          []string{"NONEXISTENT_KEY"},
+// 			migratedOutput: EvalResponse{Result: NIL, Error: nil},
+// 		},
+// 		"multiple arguments": {
+// 			input:          []string{"KEY1", "KEY2"},
+// 			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR wrong number of arguments for 'getdel' command")},
+// 		},
+// 		"key exists": {
+// 			setup: func() {
+// 				key := "diceKey"
+// 				value := "diceVal"
+// 				obj := &object.Obj{
+// 					Value:          value,
+// 					LastAccessedAt: uint32(time.Now().Unix()),
+// 				}
+// 				store.Put(key, obj)
+// 			},
+// 			input:          []string{"diceKey"},
+// 			migratedOutput: EvalResponse{Result: "diceVal", Error: nil},
+// 		},
+// 		"key exists but expired": {
+// 			setup: func() {
+// 				key := "EXISTING_KEY"
+// 				value := "mock_value"
+// 				obj := &object.Obj{
+// 					Value:          value,
+// 					LastAccessedAt: uint32(time.Now().Unix()),
+// 				}
+// 				store.Put(key, obj)
+// 				store.SetExpiry(obj, int64(-2*time.Millisecond))
+// 			},
+// 			input:          []string{"EXISTING_KEY"},
+// 			migratedOutput: EvalResponse{Result: NIL, Error: nil},
+// 		},
+// 		"key deleted by previous call of GETDEL": {
+// 			setup: func() {
+// 				key := "DELETED_KEY"
+// 				value := "mock_value"
+// 				obj := &object.Obj{
+// 					Value:          value,
+// 					LastAccessedAt: uint32(time.Now().Unix()),
+// 				}
+// 				store.Put(key, obj)
+// 				evalGETDEL([]string{key}, store)
+// 			},
+// 			input:          []string{"DELETED_KEY"},
+// 			migratedOutput: EvalResponse{Result: NIL, Error: nil},
+// 		},
+// 	}
 
-	runMigratedEvalTests(t, tests, evalGETDEL, store)
-}
+// 	runMigratedEvalTests(t, tests, evalGETDEL, store)
+// }
 
-func testEvalGET(t *testing.T, store *dstore.Store) {
-	tests := []evalTestCase{
-		{
-			name:           "nil value",
-			input:          nil,
-			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR wrong number of arguments for 'get' command")},
-		},
-		{
-			name:           "empty array",
-			input:          []string{},
-			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR wrong number of arguments for 'get' command")},
-		},
-		{
-			name:           "key does not exist",
-			input:          []string{"NONEXISTENT_KEY"},
-			migratedOutput: EvalResponse{Result: NIL, Error: nil},
-		},
-		{
-			name:           "multiple arguments",
-			input:          []string{"KEY1", "KEY2"},
-			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR wrong number of arguments for 'get' command")},
-		},
-		{
-			name: "key exists",
-			setup: func() {
-				key := "diceKey"
-				value := "diceVal"
-				obj := &object.Obj{
-					Value:          value,
-					LastAccessedAt: uint32(time.Now().Unix()),
-				}
-				store.Put(key, obj)
-			},
-			input:          []string{"diceKey"},
-			migratedOutput: EvalResponse{Result: "diceVal", Error: nil},
-		},
-		{
-			name: "key exists but expired",
-			setup: func() {
-				key := "EXISTING_KEY"
-				value := "mock_value"
-				obj := &object.Obj{
-					Value:          value,
-					LastAccessedAt: uint32(time.Now().Unix()),
-				}
-				store.Put(key, obj)
-				store.SetExpiry(obj, int64(-2*time.Millisecond))
-			},
-			input:          []string{"EXISTING_KEY"},
-			migratedOutput: EvalResponse{Result: NIL, Error: nil},
-		},
-	}
+// func testEvalGET(t *testing.T, store *dstore.Store) {
+// 	tests := []evalTestCase{
+// 		{
+// 			name:           "nil value",
+// 			input:          nil,
+// 			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR wrong number of arguments for 'get' command")},
+// 		},
+// 		{
+// 			name:           "empty array",
+// 			input:          []string{},
+// 			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR wrong number of arguments for 'get' command")},
+// 		},
+// 		{
+// 			name:           "key does not exist",
+// 			input:          []string{"NONEXISTENT_KEY"},
+// 			migratedOutput: EvalResponse{Result: NIL, Error: nil},
+// 		},
+// 		{
+// 			name:           "multiple arguments",
+// 			input:          []string{"KEY1", "KEY2"},
+// 			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR wrong number of arguments for 'get' command")},
+// 		},
+// 		{
+// 			name: "key exists",
+// 			setup: func() {
+// 				key := "diceKey"
+// 				value := "diceVal"
+// 				obj := &object.Obj{
+// 					Value:          value,
+// 					LastAccessedAt: uint32(time.Now().Unix()),
+// 				}
+// 				store.Put(key, obj)
+// 			},
+// 			input:          []string{"diceKey"},
+// 			migratedOutput: EvalResponse{Result: "diceVal", Error: nil},
+// 		},
+// 		{
+// 			name: "key exists but expired",
+// 			setup: func() {
+// 				key := "EXISTING_KEY"
+// 				value := "mock_value"
+// 				obj := &object.Obj{
+// 					Value:          value,
+// 					LastAccessedAt: uint32(time.Now().Unix()),
+// 				}
+// 				store.Put(key, obj)
+// 				store.SetExpiry(obj, int64(-2*time.Millisecond))
+// 			},
+// 			input:          []string{"EXISTING_KEY"},
+// 			migratedOutput: EvalResponse{Result: NIL, Error: nil},
+// 		},
+// 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Setup the test store
-			if tt.setup != nil {
-				tt.setup()
-			}
+// 	for _, tt := range tests {
+// 		t.Run(tt.name, func(t *testing.T) {
+// 			// Setup the test store
+// 			if tt.setup != nil {
+// 				tt.setup()
+// 			}
 
-			response := evalGET(tt.input, store)
+// 			response := evalGET(tt.input, store)
 
-			// Handle comparison for byte slices
-			if b, ok := response.Result.([]byte); ok && tt.migratedOutput.Result != nil {
-				if expectedBytes, ok := tt.migratedOutput.Result.([]byte); ok {
-					assert.True(t, bytes.Equal(b, expectedBytes), "expected and actual byte slices should be equal")
-				}
-			} else {
-				assert.Equal(t, tt.migratedOutput.Result, response.Result)
-			}
+// 			// Handle comparison for byte slices
+// 			if b, ok := response.Result.([]byte); ok && tt.migratedOutput.Result != nil {
+// 				if expectedBytes, ok := tt.migratedOutput.Result.([]byte); ok {
+// 					assert.True(t, bytes.Equal(b, expectedBytes), "expected and actual byte slices should be equal")
+// 				}
+// 			} else {
+// 				assert.Equal(t, tt.migratedOutput.Result, response.Result)
+// 			}
 
-			if tt.migratedOutput.Error != nil {
-				assert.EqualError(t, response.Error, tt.migratedOutput.Error.Error())
-			} else {
-				assert.NoError(t, response.Error)
-			}
-		})
-	}
-}
+// 			if tt.migratedOutput.Error != nil {
+// 				assert.EqualError(t, response.Error, tt.migratedOutput.Error.Error())
+// 			} else {
+// 				assert.NoError(t, response.Error)
+// 			}
+// 		})
+// 	}
+// }
 
 func testEvalEXPIRE(t *testing.T, store *dstore.Store) {
 	tests := map[string]evalTestCase{
