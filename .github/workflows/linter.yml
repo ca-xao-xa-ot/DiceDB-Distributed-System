@@ -24,9 +24,18 @@ jobs:
 
       - name: Download Dependencies and Run Vet
         run: |
-          # Tải toàn bộ thư viện cần thiết về máy ảo
-          go get -d ./...
-          go mod tidy
-          
-          # Chạy kiểm tra lỗi bằng hàng chính chủ
-          go vet ./...
+          # Tìm tất cả các thư mục chứa file go.mod trong dự án
+          for mod in $(find . -name "go.mod"); do
+            dir=$(dirname "$mod")
+            echo "==== Đang tải thư viện và kiểm tra tại: $dir ===="
+            
+            # Chui vào đúng thư mục chứa code
+            cd "$dir"
+            
+            # Tải thư viện và chạy linter chính chủ
+            go mod tidy
+            go vet ./...
+            
+            # Thoát ra ngoài để tiếp tục vòng lặp (nếu có nhiều dự án con)
+            cd - > /dev/null
+          done
