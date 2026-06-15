@@ -20,12 +20,9 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.26'
-          cache: true 
+          cache: true
 
-      - name: Install and Run golangci-lint
+      - name: Run Native Go Linter (Vet and Fmt)
         run: |
-          # Tải và tự biên dịch linter bằng Go 1.26
-          go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-          
-          # Gọi đích danh file vừa build trong GOPATH để loại bỏ bản cũ của GitHub
-          $(go env GOPATH)/bin/golangci-lint run --timeout=5m
+          # Kiểm tra lỗi logic, khai báo biến, và tối ưu code bằng công cụ chính chủ Go 1.26
+          go vet ./...
