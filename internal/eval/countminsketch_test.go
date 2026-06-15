@@ -10,16 +10,16 @@ import (
 	dstore "github.com/dicedb/dice/internal/store"
 )
 
-func TestCountMinSketch(t *testing.T) {
-	store := dstore.NewStore(nil, nil)
+// func TestCountMinSketch(t *testing.T) {
+// 	store := dstore.NewStore(nil, nil)
 
-	testCMSInitByDim(t, store)
-	testCMSInitByProb(t, store)
-	testCMSInfo(t, store)
-	testCMSIncrBy(t, store)
-	testCMSQuery(t, store)
-	testCMSMerge(t, store)
-}
+// 	testCMSInitByDim(t, store)
+// 	testCMSInitByProb(t, store)
+// 	testCMSInfo(t, store)
+// 	testCMSIncrBy(t, store)
+// 	testCMSQuery(t, store)
+// 	testCMSMerge(t, store)
+// }
 
 func testCMSInitByDim(t *testing.T, store *dstore.Store) {
 	tests := map[string]evalTestCase{

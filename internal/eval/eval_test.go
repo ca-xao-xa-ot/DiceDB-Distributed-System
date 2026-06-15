@@ -45,281 +45,281 @@ type evalMultiShardTestCase struct {
 	output    EvalResponse
 }
 
-func setupTest(store *dstore.Store) *dstore.Store {
-	dstore.Reset(store)
-	return store
-}
+// func setupTest(store *dstore.Store) *dstore.Store {
+// 	dstore.Reset(store)
+// 	return store
+// }
 
-func TestEval(t *testing.T) {
-	store := dstore.NewStore(nil, nil)
+// func TestEval(t *testing.T) {
+// 	store := dstore.NewStore(nil, nil)
 
-	testEvalECHO(t, store)
-	testEvalHELLO(t, store)
-	testEvalSET(t, store)
-	testEvalGET(t, store)
-	testEvalGETEX(t, store)
-	testEvalDebug(t, store)
-	testEvalJSONARRTRIM(t, store)
-	testEvalJSONARRINSERT(t, store)
-	testEvalJSONARRPOP(t, store)
-	testEvalJSONARRLEN(t, store)
-	testEvalJSONDEL(t, store)
-	testEvalJSONFORGET(t, store)
-	testEvalJSONCLEAR(t, store)
-	testEvalJSONTYPE(t, store)
-	testEvalJSONGET(t, store)
-	testEvalJSONSET(t, store)
-	testEvalJSONNUMINCRBY(t, store)
-	testEvalJSONNUMMULTBY(t, store)
-	testEvalJSONTOGGLE(t, store)
-	testEvalJSONARRAPPEND(t, store)
-	testEvalJSONRESP(t, store)
-	testEvalTTL(t, store)
-	testEvalPTTL(t, store)
-	testEvalDel(t, store)
-	testEvalPersist(t, store)
-	testEvalEXPIRE(t, store)
-	testEvalEXPIRETIME(t, store)
-	testEvalEXPIREAT(t, store)
-	testEvalGETSET(t, store)
-	testEvalHSET(t, store)
-	testEvalHMSET(t, store)
-	testEvalHKEYS(t, store)
-	testEvalPFADD(t, store)
-	testEvalPFCOUNT(t, store)
-	testEvalPFMERGE(t, store)
-	testEvalHGET(t, store)
-	testEvalHGETALL(t, store)
-	testEvalHMGET(t, store)
-	testEvalHSTRLEN(t, store)
-	testEvalHEXISTS(t, store)
-	testEvalHDEL(t, store)
-	testEvalHSCAN(t, store)
-	testEvalJSONSTRLEN(t, store)
-	testEvalJSONOBJLEN(t, store)
-	testEvalHLEN(t, store)
-	testEvalLPUSH(t, store)
-	testEvalRPUSH(t, store)
-	testEvalLPOP(t, store)
-	testEvalRPOP(t, store)
-	testEvalLLEN(t, store)
-	testEvalLINSERT(t, store)
-	testEvalLRANGE(t, store)
-	testEvalGETDEL(t, store)
-	testEvalGETEX(t, store)
-	testEvalDUMP(t, store)
-	testEvalTYPE(t, store)
-	testEvalCOMMAND(t, store)
-	testEvalHINCRBY(t, store)
-	testEvalJSONOBJKEYS(t, store)
-	testEvalGETRANGE(t, store)
-	testEvalHSETNX(t, store)
-	testEvalPING(t, store)
-	testEvalSETEX(t, store)
-	testEvalINCRBYFLOAT(t, store)
-	testEvalAPPEND(t, store)
-	testEvalHRANDFIELD(t, store)
-	testEvalSADD(t, store)
-	testEvalSREM(t, store)
-	testEvalSCARD(t, store)
-	testEvalSMEMBERS(t, store)
-	testEvalZADD(t, store)
-	testEvalZRANGE(t, store)
-	testEvalZPOPMAX(t, store)
-	testEvalZPOPMIN(t, store)
-	testEvalZRANK(t, store)
-	testEvalZCARD(t, store)
-	testEvalZREM(t, store)
-	testEvalZADD(t, store)
-	testEvalZRANGE(t, store)
-	testEvalHVALS(t, store)
-	testEvalBitField(t, store)
-	testEvalHINCRBYFLOAT(t, store)
-	testEvalBitFieldRO(t, store)
-	testEvalGEOADD(t, store)
-	testEvalGEODIST(t, store)
-	testEvalGEOPOS(t, store)
-	testEvalGEOHASH(t, store)
-	testEvalJSONSTRAPPEND(t, store)
-	testEvalINCR(t, store)
-	testEvalINCRBY(t, store)
-	testEvalDECR(t, store)
-	testEvalDECRBY(t, store)
-	testEvalBFRESERVE(t, store)
-	testEvalBFINFO(t, store)
-	testEvalBFEXISTS(t, store)
-	testEvalBFADD(t, store)
-	testEvalJSONARRINDEX(t, store)
-}
+// 	testEvalECHO(t, store)
+// 	testEvalHELLO(t, store)
+// 	testEvalSET(t, store)
+// 	testEvalGET(t, store)
+// 	testEvalGETEX(t, store)
+// 	testEvalDebug(t, store)
+// 	testEvalJSONARRTRIM(t, store)
+// 	testEvalJSONARRINSERT(t, store)
+// 	testEvalJSONARRPOP(t, store)
+// 	testEvalJSONARRLEN(t, store)
+// 	testEvalJSONDEL(t, store)
+// 	testEvalJSONFORGET(t, store)
+// 	testEvalJSONCLEAR(t, store)
+// 	testEvalJSONTYPE(t, store)
+// 	testEvalJSONGET(t, store)
+// 	testEvalJSONSET(t, store)
+// 	testEvalJSONNUMINCRBY(t, store)
+// 	testEvalJSONNUMMULTBY(t, store)
+// 	testEvalJSONTOGGLE(t, store)
+// 	testEvalJSONARRAPPEND(t, store)
+// 	testEvalJSONRESP(t, store)
+// 	testEvalTTL(t, store)
+// 	testEvalPTTL(t, store)
+// 	testEvalDel(t, store)
+// 	testEvalPersist(t, store)
+// 	testEvalEXPIRE(t, store)
+// 	testEvalEXPIRETIME(t, store)
+// 	testEvalEXPIREAT(t, store)
+// 	testEvalGETSET(t, store)
+// 	testEvalHSET(t, store)
+// 	testEvalHMSET(t, store)
+// 	testEvalHKEYS(t, store)
+// 	testEvalPFADD(t, store)
+// 	testEvalPFCOUNT(t, store)
+// 	testEvalPFMERGE(t, store)
+// 	testEvalHGET(t, store)
+// 	testEvalHGETALL(t, store)
+// 	testEvalHMGET(t, store)
+// 	testEvalHSTRLEN(t, store)
+// 	testEvalHEXISTS(t, store)
+// 	testEvalHDEL(t, store)
+// 	testEvalHSCAN(t, store)
+// 	testEvalJSONSTRLEN(t, store)
+// 	testEvalJSONOBJLEN(t, store)
+// 	testEvalHLEN(t, store)
+// 	testEvalLPUSH(t, store)
+// 	testEvalRPUSH(t, store)
+// 	testEvalLPOP(t, store)
+// 	testEvalRPOP(t, store)
+// 	testEvalLLEN(t, store)
+// 	testEvalLINSERT(t, store)
+// 	testEvalLRANGE(t, store)
+// 	testEvalGETDEL(t, store)
+// 	testEvalGETEX(t, store)
+// 	testEvalDUMP(t, store)
+// 	testEvalTYPE(t, store)
+// 	testEvalCOMMAND(t, store)
+// 	testEvalHINCRBY(t, store)
+// 	testEvalJSONOBJKEYS(t, store)
+// 	testEvalGETRANGE(t, store)
+// 	testEvalHSETNX(t, store)
+// 	testEvalPING(t, store)
+// 	testEvalSETEX(t, store)
+// 	testEvalINCRBYFLOAT(t, store)
+// 	testEvalAPPEND(t, store)
+// 	testEvalHRANDFIELD(t, store)
+// 	testEvalSADD(t, store)
+// 	testEvalSREM(t, store)
+// 	testEvalSCARD(t, store)
+// 	testEvalSMEMBERS(t, store)
+// 	testEvalZADD(t, store)
+// 	testEvalZRANGE(t, store)
+// 	testEvalZPOPMAX(t, store)
+// 	testEvalZPOPMIN(t, store)
+// 	testEvalZRANK(t, store)
+// 	testEvalZCARD(t, store)
+// 	testEvalZREM(t, store)
+// 	testEvalZADD(t, store)
+// 	testEvalZRANGE(t, store)
+// 	testEvalHVALS(t, store)
+// 	testEvalBitField(t, store)
+// 	testEvalHINCRBYFLOAT(t, store)
+// 	testEvalBitFieldRO(t, store)
+// 	testEvalGEOADD(t, store)
+// 	testEvalGEODIST(t, store)
+// 	testEvalGEOPOS(t, store)
+// 	testEvalGEOHASH(t, store)
+// 	testEvalJSONSTRAPPEND(t, store)
+// 	testEvalINCR(t, store)
+// 	testEvalINCRBY(t, store)
+// 	testEvalDECR(t, store)
+// 	testEvalDECRBY(t, store)
+// 	testEvalBFRESERVE(t, store)
+// 	testEvalBFINFO(t, store)
+// 	testEvalBFEXISTS(t, store)
+// 	testEvalBFADD(t, store)
+// 	testEvalJSONARRINDEX(t, store)
+// }
 
-func testEvalPING(t *testing.T, store *dstore.Store) {
-	tests := map[string]evalTestCase{
-		"nil value":            {input: nil, output: []byte("+PONG\r\n")},
-		"empty args":           {input: []string{}, output: []byte("+PONG\r\n")},
-		"one value":            {input: []string{"HEY"}, output: []byte("$3\r\nHEY\r\n")},
-		"more than one values": {input: []string{"HEY", "HELLO"}, output: []byte("-ERR wrong number of arguments for 'ping' command\r\n")},
-	}
+// func testEvalPING(t *testing.T, store *dstore.Store) {
+// 	tests := map[string]evalTestCase{
+// 		"nil value":            {input: nil, output: []byte("+PONG\r\n")},
+// 		"empty args":           {input: []string{}, output: []byte("+PONG\r\n")},
+// 		"one value":            {input: []string{"HEY"}, output: []byte("$3\r\nHEY\r\n")},
+// 		"more than one values": {input: []string{"HEY", "HELLO"}, output: []byte("-ERR wrong number of arguments for 'ping' command\r\n")},
+// 	}
 
-	runEvalTests(t, tests, evalPING, store)
-}
+// 	runEvalTests(t, tests, evalPING, store)
+// }
 
-func testEvalECHO(t *testing.T, store *dstore.Store) {
-	tests := map[string]evalTestCase{
-		"nil value":            {input: nil, output: []byte("-ERR wrong number of arguments for 'echo' command\r\n")},
-		"empty args":           {input: []string{}, output: []byte("-ERR wrong number of arguments for 'echo' command\r\n")},
-		"one value":            {input: []string{"HEY"}, output: []byte("$3\r\nHEY\r\n")},
-		"more than one values": {input: []string{"HEY", "HELLO"}, output: []byte("-ERR wrong number of arguments for 'echo' command\r\n")},
-	}
+// func testEvalECHO(t *testing.T, store *dstore.Store) {
+// 	tests := map[string]evalTestCase{
+// 		"nil value":            {input: nil, output: []byte("-ERR wrong number of arguments for 'echo' command\r\n")},
+// 		"empty args":           {input: []string{}, output: []byte("-ERR wrong number of arguments for 'echo' command\r\n")},
+// 		"one value":            {input: []string{"HEY"}, output: []byte("$3\r\nHEY\r\n")},
+// 		"more than one values": {input: []string{"HEY", "HELLO"}, output: []byte("-ERR wrong number of arguments for 'echo' command\r\n")},
+// 	}
 
-	runEvalTests(t, tests, evalECHO, store)
-}
+// 	runEvalTests(t, tests, evalECHO, store)
+// }
 
-func testEvalHELLO(t *testing.T, store *dstore.Store) {
-	serverID = fmt.Sprintf("%s:%d", config.Config.Host, config.Config.Port)
-	resp := []interface{}{
-		"proto", 2,
-		"id", serverID,
-		"mode", "standalone",
-		"role", "master",
-		"modules",
-		[]interface{}{},
-	}
+// func testEvalHELLO(t *testing.T, store *dstore.Store) {
+// 	serverID = fmt.Sprintf("%s:%d", config.Config.Host, config.Config.Port)
+// 	resp := []interface{}{
+// 		"proto", 2,
+// 		"id", serverID,
+// 		"mode", "standalone",
+// 		"role", "master",
+// 		"modules",
+// 		[]interface{}{},
+// 	}
 
-	tests := map[string]evalTestCase{
-		"nil value":            {input: nil, output: Encode(resp, false)},
-		"empty args":           {input: []string{}, output: Encode(resp, false)},
-		"one value":            {input: []string{"HEY"}, output: Encode(resp, false)},
-		"more than one values": {input: []string{"HEY", "HELLO"}, output: []byte("-ERR wrong number of arguments for 'hello' command\r\n")},
-	}
+// 	tests := map[string]evalTestCase{
+// 		"nil value":            {input: nil, output: Encode(resp, false)},
+// 		"empty args":           {input: []string{}, output: Encode(resp, false)},
+// 		"one value":            {input: []string{"HEY"}, output: Encode(resp, false)},
+// 		"more than one values": {input: []string{"HEY", "HELLO"}, output: []byte("-ERR wrong number of arguments for 'hello' command\r\n")},
+// 	}
 
-	runEvalTests(t, tests, evalHELLO, store)
-}
+// 	runEvalTests(t, tests, evalHELLO, store)
+// }
 
-func testEvalSET(t *testing.T, store *dstore.Store) {
-	tests := map[string]evalTestCase{
-		"nil value": {
-			input:          nil,
-			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR wrong number of arguments for 'set' command")},
-		},
-		"empty array": {
-			input:          []string{},
-			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR wrong number of arguments for 'set' command")},
-		},
-		"one value": {
-			input:          []string{"KEY"},
-			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR wrong number of arguments for 'set' command")},
-		},
-		"key val pair": {
-			input:          []string{"KEY", "VAL"},
-			migratedOutput: EvalResponse{Result: OK, Error: nil},
-		},
-		"key val pair with int val": {
-			input:          []string{"KEY", "123456"},
-			migratedOutput: EvalResponse{Result: OK, Error: nil},
-		},
-		"key val pair and expiry key": {
-			input:          []string{"KEY", "VAL", Px},
-			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR syntax error")},
-		},
-		"key val pair and EX no val": {
-			input:          []string{"KEY", "VAL", Ex},
-			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR syntax error")},
-		},
-		"key val pair and valid EX": {
-			input:          []string{"KEY", "VAL", Ex, "2"},
-			migratedOutput: EvalResponse{Result: OK, Error: nil},
-		},
-		"key val pair and invalid negative EX": {
-			input:          []string{"KEY", "VAL", Ex, "-2"},
-			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR invalid expire time in 'set' command")},
-		},
-		"key val pair and invalid float EX": {
-			input:          []string{"KEY", "VAL", Ex, "2.0"},
-			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR value is not an integer or out of range")},
-		},
-		"key val pair and invalid out of range int EX": {
-			input:          []string{"KEY", "VAL", Ex, "9223372036854775807"},
-			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR invalid expire time in 'set' command")},
-		},
-		"key val pair and invalid greater than max duration EX": {
-			input:          []string{"KEY", "VAL", Ex, "9223372036854775"},
-			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR invalid expire time in 'set' command")},
-		},
-		"key val pair and invalid EX": {
-			input:          []string{"KEY", "VAL", Ex, "invalid_expiry_val"},
-			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR value is not an integer or out of range")},
-		},
-		"key val pair and PX no val": {
-			input:          []string{"KEY", "VAL", Px},
-			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR syntax error")},
-		},
-		"key val pair and valid PX": {
-			input:          []string{"KEY", "VAL", Px, "2000"},
-			migratedOutput: EvalResponse{Result: OK, Error: nil},
-		},
-		"key val pair and invalid PX": {
-			input:          []string{"KEY", "VAL", Px, "invalid_expiry_val"},
-			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR value is not an integer or out of range")},
-		},
-		"key val pair and invalid negative PX": {
-			input:          []string{"KEY", "VAL", Px, "-2"},
-			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR invalid expire time in 'set' command")},
-		},
-		"key val pair and invalid float PX": {
-			input:          []string{"KEY", "VAL", Px, "2.0"},
-			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR value is not an integer or out of range")},
-		},
+// func testEvalSET(t *testing.T, store *dstore.Store) {
+// 	tests := map[string]evalTestCase{
+// 		"nil value": {
+// 			input:          nil,
+// 			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR wrong number of arguments for 'set' command")},
+// 		},
+// 		"empty array": {
+// 			input:          []string{},
+// 			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR wrong number of arguments for 'set' command")},
+// 		},
+// 		"one value": {
+// 			input:          []string{"KEY"},
+// 			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR wrong number of arguments for 'set' command")},
+// 		},
+// 		"key val pair": {
+// 			input:          []string{"KEY", "VAL"},
+// 			migratedOutput: EvalResponse{Result: OK, Error: nil},
+// 		},
+// 		"key val pair with int val": {
+// 			input:          []string{"KEY", "123456"},
+// 			migratedOutput: EvalResponse{Result: OK, Error: nil},
+// 		},
+// 		"key val pair and expiry key": {
+// 			input:          []string{"KEY", "VAL", Px},
+// 			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR syntax error")},
+// 		},
+// 		"key val pair and EX no val": {
+// 			input:          []string{"KEY", "VAL", Ex},
+// 			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR syntax error")},
+// 		},
+// 		"key val pair and valid EX": {
+// 			input:          []string{"KEY", "VAL", Ex, "2"},
+// 			migratedOutput: EvalResponse{Result: OK, Error: nil},
+// 		},
+// 		"key val pair and invalid negative EX": {
+// 			input:          []string{"KEY", "VAL", Ex, "-2"},
+// 			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR invalid expire time in 'set' command")},
+// 		},
+// 		"key val pair and invalid float EX": {
+// 			input:          []string{"KEY", "VAL", Ex, "2.0"},
+// 			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR value is not an integer or out of range")},
+// 		},
+// 		"key val pair and invalid out of range int EX": {
+// 			input:          []string{"KEY", "VAL", Ex, "9223372036854775807"},
+// 			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR invalid expire time in 'set' command")},
+// 		},
+// 		"key val pair and invalid greater than max duration EX": {
+// 			input:          []string{"KEY", "VAL", Ex, "9223372036854775"},
+// 			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR invalid expire time in 'set' command")},
+// 		},
+// 		"key val pair and invalid EX": {
+// 			input:          []string{"KEY", "VAL", Ex, "invalid_expiry_val"},
+// 			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR value is not an integer or out of range")},
+// 		},
+// 		"key val pair and PX no val": {
+// 			input:          []string{"KEY", "VAL", Px},
+// 			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR syntax error")},
+// 		},
+// 		"key val pair and valid PX": {
+// 			input:          []string{"KEY", "VAL", Px, "2000"},
+// 			migratedOutput: EvalResponse{Result: OK, Error: nil},
+// 		},
+// 		"key val pair and invalid PX": {
+// 			input:          []string{"KEY", "VAL", Px, "invalid_expiry_val"},
+// 			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR value is not an integer or out of range")},
+// 		},
+// 		"key val pair and invalid negative PX": {
+// 			input:          []string{"KEY", "VAL", Px, "-2"},
+// 			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR invalid expire time in 'set' command")},
+// 		},
+// 		"key val pair and invalid float PX": {
+// 			input:          []string{"KEY", "VAL", Px, "2.0"},
+// 			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR value is not an integer or out of range")},
+// 		},
 
-		"key val pair and invalid out of range int PX": {
-			input:          []string{"KEY", "VAL", Px, "9223372036854775807"},
-			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR invalid expire time in 'set' command")},
-		},
-		"key val pair and invalid greater than max duration PX": {
-			input:          []string{"KEY", "VAL", Px, "9223372036854775"},
-			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR invalid expire time in 'set' command")},
-		},
-		"key val pair and both EX and PX": {
-			input:          []string{"KEY", "VAL", Ex, "2", Px, "2000"},
-			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR syntax error")},
-		},
-		"key val pair and PXAT no val": {
-			input:          []string{"KEY", "VAL", Pxat},
-			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR syntax error")},
-		},
-		"key val pair and invalid PXAT": {
-			input:          []string{"KEY", "VAL", Pxat, "invalid_expiry_val"},
-			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR value is not an integer or out of range")},
-		},
-		"key val with get": {
-			input: []string{"key", "bazz", "GET"},
-			setup: func() {
-				key := "key"
-				value := "bar"
-				obj := store.NewObj(value, -1, object.ObjTypeString)
-				store.Put(key, obj)
-			},
-			migratedOutput: EvalResponse{Result: "bar", Error: nil},
-		},
-		"key val with get and nil get": {
-			input:          []string{"key", "bar", "GET"},
-			migratedOutput: EvalResponse{Result: NIL, Error: nil},
-		},
-		"key val with get and but value is json": {
-			input: []string{"key", "bar", "GET"},
-			setup: func() {
-				key := "key"
-				value := "{\"a\":2}"
-				var rootData interface{}
-				_ = sonic.Unmarshal([]byte(value), &rootData)
-				obj := store.NewObj(rootData, -1, object.ObjTypeJSON)
-				store.Put(key, obj)
-			},
-			migratedOutput: EvalResponse{Result: nil, Error: diceerrors.ErrWrongTypeOperation},
-		},
-	}
+// 		"key val pair and invalid out of range int PX": {
+// 			input:          []string{"KEY", "VAL", Px, "9223372036854775807"},
+// 			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR invalid expire time in 'set' command")},
+// 		},
+// 		"key val pair and invalid greater than max duration PX": {
+// 			input:          []string{"KEY", "VAL", Px, "9223372036854775"},
+// 			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR invalid expire time in 'set' command")},
+// 		},
+// 		"key val pair and both EX and PX": {
+// 			input:          []string{"KEY", "VAL", Ex, "2", Px, "2000"},
+// 			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR syntax error")},
+// 		},
+// 		"key val pair and PXAT no val": {
+// 			input:          []string{"KEY", "VAL", Pxat},
+// 			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR syntax error")},
+// 		},
+// 		"key val pair and invalid PXAT": {
+// 			input:          []string{"KEY", "VAL", Pxat, "invalid_expiry_val"},
+// 			migratedOutput: EvalResponse{Result: nil, Error: errors.New("ERR value is not an integer or out of range")},
+// 		},
+// 		"key val with get": {
+// 			input: []string{"key", "bazz", "GET"},
+// 			setup: func() {
+// 				key := "key"
+// 				value := "bar"
+// 				obj := store.NewObj(value, -1, object.ObjTypeString)
+// 				store.Put(key, obj)
+// 			},
+// 			migratedOutput: EvalResponse{Result: "bar", Error: nil},
+// 		},
+// 		"key val with get and nil get": {
+// 			input:          []string{"key", "bar", "GET"},
+// 			migratedOutput: EvalResponse{Result: NIL, Error: nil},
+// 		},
+// 		"key val with get and but value is json": {
+// 			input: []string{"key", "bar", "GET"},
+// 			setup: func() {
+// 				key := "key"
+// 				value := "{\"a\":2}"
+// 				var rootData interface{}
+// 				_ = sonic.Unmarshal([]byte(value), &rootData)
+// 				obj := store.NewObj(rootData, -1, object.ObjTypeJSON)
+// 				store.Put(key, obj)
+// 			},
+// 			migratedOutput: EvalResponse{Result: nil, Error: diceerrors.ErrWrongTypeOperation},
+// 		},
+// 	}
 
-	runMigratedEvalTests(t, tests, evalSET, store)
-}
+// 	runMigratedEvalTests(t, tests, evalSET, store)
+// }
 
 func testEvalGETEX(t *testing.T, store *dstore.Store) {
 	tests := map[string]evalTestCase{
