@@ -23,19 +23,23 @@ jobs:
           cache: true
 
       - name: Download Dependencies and Run Vet
+        env:
+          # Gọi thẻ căn cước tự động của GitHub ra để sử dụng
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Tìm tất cả các thư mục chứa file go.mod trong dự án
+          # Bơm Token vào Git để vượt qua rào cản đòi hỏi Username/Password
+          git config --global url."https://${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
+          
+          # Đánh dấu các repo của nhóm là mã nguồn nội bộ (Private) để Go không bị chặn
+          export GOPRIVATE=github.com/dicedb/*
+          
+          # Tìm và chạy linter cho toàn bộ dự án
           for mod in $(find . -name "go.mod"); do
             dir=$(dirname "$mod")
             echo "==== Đang tải thư viện và kiểm tra tại: $dir ===="
             
-            # Chui vào đúng thư mục chứa code
             cd "$dir"
-            
-            # Tải thư viện và chạy linter chính chủ
             go mod tidy
             go vet ./...
-            
-            # Thoát ra ngoài để tiếp tục vòng lặp (nếu có nhiều dự án con)
             cd - > /dev/null
           done
