@@ -6,10 +6,11 @@ import (
 )
 
 type NodeStatus struct {
-	ID             string    `json:"id"`
-	Status         string    `json:"status"`
-	LastSeen       time.Time `json:"last_seen"`
-	CommandsSynced int       `json:"commands_synced"`
+    ID             string    `json:"id"`
+    Status         string    `json:"status"`
+    LastSeen       time.Time `json:"last_seen"`
+    CommandsSynced int       `json:"commands_synced"`
+    UptimeSeconds  int64     `json:"uptime_seconds"`
 }
 
 var (
