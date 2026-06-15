@@ -155,7 +155,7 @@ func (s *Server) AcceptConnectionRequests(ctx context.Context, wg *sync.WaitGrou
 
 func (s *Server) startIOThread(ctx context.Context, wg *sync.WaitGroup, thread *IOThread) {
 	defer wg.Done()
-	err := thread.Start(ctx, s.shardManager, &watchManager)
+	err := thread.Start(ctx, s.shardManager, s.watchManager)
 	if err != nil {
 		if err == io.EOF {
 			s.watchManager.CleanupThreadWatchSubscriptions(thread)
