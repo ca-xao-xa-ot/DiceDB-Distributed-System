@@ -5,16 +5,16 @@ package cmd
 
 import (
 	"fmt"
-	"log/slog"
-	"strings"
-	"time"
-        "github.com/dicedb/dice/monitoring"
 	"github.com/dgryski/go-farm"
 	"github.com/dicedb/dice/internal/errors"
 	"github.com/dicedb/dice/internal/object"
 	"github.com/dicedb/dice/internal/shardmanager"
 	"github.com/dicedb/dice/internal/store"
+	"github.com/dicedb/dice/monitoring"
 	"github.com/dicedb/dicedb-go/wire"
+	"log/slog"
+	"strings"
+	"time"
 )
 
 // nolint: stylecheck
@@ -59,24 +59,24 @@ func (c *Cmd) Execute(sm *shardmanager.ShardManager) (*CmdRes, error) {
 	}
 
 	res, err = c.Meta.Execute(c, sm)
-        monitoring.Mu.Lock()
+	monitoring.Mu.Lock()
 
-node, exists := monitoring.Nodes["local"]
+	node, exists := monitoring.Nodes["local"]
 
-if !exists {
-        node = &monitoring.NodeStatus{
-                ID:       "local",
-                Status:   "online",
-                LastSeen: time.Now(),
-        }
+	if !exists {
+		node = &monitoring.NodeStatus{
+			ID:       "local",
+			Status:   "online",
+			LastSeen: time.Now(),
+		}
 
-        monitoring.Nodes["local"] = node
-}
+		monitoring.Nodes["local"] = node
+	}
 
-node.CommandsSynced++
-node.LastSeen = time.Now()
+	node.CommandsSynced++
+	node.LastSeen = time.Now()
 
-monitoring.Mu.Unlock()
+	monitoring.Mu.Unlock()
 	slog.Debug("command executed",
 		slog.Any("cmd", c.String()),
 		slog.String("client_id", c.ClientID),

@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math/rand"
+	"net" // Đã thêm thư viện net để kết nối TCP thật
 	"sync"
 	"time"
 )
@@ -56,44 +56,67 @@ func (s *ClusterService) StartHeartbeatSimulation() {
 	}()
 }
 
+// BƯỚC 1: ĐÃ SỬA THÀNH PING TCP THẬT (CHUẨN RESP)
 func (s *ClusterService) tickHeartbeat() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	now := time.Now()
 	for i := range s.nodes {
-		shouldBeat := true
-		switch s.nodes[i].Name {
-		case "Replica1":
-			shouldBeat = rand.Intn(100) > 22
-		case "Replica2":
-			shouldBeat = rand.Intn(100) > 45
-		}
+		addr := fmt.Sprintf("127.0.0.1:%d", s.nodes[i].Port)
+		
+		// Thử kết nối TCP tới Node trong 1 giây
+		conn, err := net.DialTimeout("tcp", addr, 1*time.Second)
+		if err == nil {
+			// Nếu kết nối thành công, gửi PING chuẩn RESP để không làm sập server
+			_, _ = conn.Write([]byte("*1\r\n$4\r\nPING\r\n"))
+			conn.Close()
 
-		if shouldBeat {
 			s.nodes[i].LastHeartbeat = now
-			s.nodes[i].Status = "Online"
 			s.appendActivityLocked("HEARTBEAT", fmt.Sprintf("%s heartbeat received", s.nodes[i].Name))
 		}
 	}
 
+	// Hàm này sẽ tự động chuyển node thành Offline nếu quá hạn timeout
 	s.refreshNodeStatusesLocked()
 }
 
+// BƯỚC 2: ĐÃ SỬA ĐỂ TỰ ĐỘNG REPLICATE SANG REPLICA QUA TCP
 func (s *ClusterService) Set(key, value string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
+	// 1. Lưu vào CSDL nội bộ trước
 	if err := s.store.Set(ctx, key, value); err != nil {
 		return err
 	}
 
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	s.refreshKeyCountLocked()
 	s.appendActivityLocked("SET", fmt.Sprintf("SET %s=%s", key, value))
-	s.appendReplicationLocked("Replica1", "SET", "Replicated to Replica1")
-	s.appendReplicationLocked("Replica2", "SET", "Replicated to Replica2")
+	
+	// 2. Định dạng lệnh SET sang chuẩn RESP để đồng bộ
+	respCmd := fmt.Sprintf("*3\r\n$3\r\nSET\r\n$%d\r\n%s\r\n$%d\r\n%s\r\n", len(key), key, len(value), value)
+
+	// 3. Đẩy sang các máy Replica qua mạng
+	for i := range s.nodes {
+		if s.nodes[i].Role == "replica" {
+			go func(node Node, cmd string) {
+				addr := fmt.Sprintf("127.0.0.1:%d", node.Port)
+				conn, err := net.DialTimeout("tcp", addr, 2*time.Second)
+				if err == nil {
+					defer conn.Close()
+					_, _ = conn.Write([]byte(cmd))
+
+					s.mu.Lock()
+					s.appendReplicationLocked(node.Name, "SET", fmt.Sprintf("Replicated to %s", node.Name))
+					s.mu.Unlock()
+				}
+			}(s.nodes[i], respCmd)
+		}
+	}
+	s.mu.Unlock()
+
 	return nil
 }
 
@@ -126,11 +149,30 @@ func (s *ClusterService) Delete(key string) error {
 	}
 
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	s.refreshKeyCountLocked()
 	s.appendActivityLocked("DELETE", fmt.Sprintf("DELETE %s", key))
-	s.appendReplicationLocked("Replica1", "DELETE", "Delete replicated to Replica1")
-	s.appendReplicationLocked("Replica2", "DELETE", "Delete replicated to Replica2")
+
+	// Bổ sung đồng bộ lệnh DEL sang các node Replica cho đồng bộ toàn diện
+	respCmdDEL := fmt.Sprintf("*2\r\n$3\r\nDEL\r\n$%d\r\n%s\r\n", len(key), key)
+	
+	for i := range s.nodes {
+		if s.nodes[i].Role == "replica" {
+			go func(node Node, cmd string) {
+				addr := fmt.Sprintf("127.0.0.1:%d", node.Port)
+				conn, err := net.DialTimeout("tcp", addr, 2*time.Second)
+				if err == nil {
+					defer conn.Close()
+					_, _ = conn.Write([]byte(cmd))
+
+					s.mu.Lock()
+					s.appendReplicationLocked(node.Name, "DELETE", fmt.Sprintf("Delete replicated to %s", node.Name))
+					s.mu.Unlock()
+				}
+			}(s.nodes[i], respCmdDEL)
+		}
+	}
+	s.mu.Unlock()
+
 	return nil
 }
 
