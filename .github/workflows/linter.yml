@@ -20,10 +20,12 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.26'
-          cache: true # Bật cache để các lần chạy sau không phải tải lại Go từ đầu
+          cache: true 
 
       - name: Install and Run golangci-lint
         run: |
-          # Ép hệ thống tự biên dịch linter bằng chính Go 1.26 vừa cài ở trên
+          # Tải và tự biên dịch linter bằng Go 1.26
           go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-          golangci-lint run --timeout=5m
+          
+          # Gọi đích danh file vừa build trong GOPATH để loại bỏ bản cũ của GitHub
+          $(go env GOPATH)/bin/golangci-lint run --timeout=5m
