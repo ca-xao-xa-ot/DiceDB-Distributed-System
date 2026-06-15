@@ -64,7 +64,7 @@ func (t *IOThread) safeSend(ctx context.Context, res *wire.Result) error {
 	return t.serverWire.Send(ctx, res)
 }
 
-func (t *IOThread) Start(ctx context.Context, shardManager *shardmanager.ShardManager, watchManager WatchManager) error {
+func (t *IOThread) Start(ctx context.Context, shardManager *shardmanager.ShardManager, watchManager *WatchManager) error {
 	for {
 		var c *wire.Command
 		recvCh := make(chan *wire.Command, 1)
