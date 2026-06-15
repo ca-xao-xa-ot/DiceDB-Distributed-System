@@ -22,7 +22,11 @@ jobs:
           go-version: '1.26'
           cache: true
 
-      - name: Run Native Go Linter (Vet and Fmt)
+      - name: Download Dependencies and Run Vet
         run: |
-          # Kiểm tra lỗi logic, khai báo biến, và tối ưu code bằng công cụ chính chủ Go 1.26
+          # Tải toàn bộ thư viện cần thiết về máy ảo
+          go get -d ./...
+          go mod tidy
+          
+          # Chạy kiểm tra lỗi bằng hàng chính chủ
           go vet ./...
