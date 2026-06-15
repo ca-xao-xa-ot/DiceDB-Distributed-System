@@ -19,12 +19,11 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.26'
-          cache: true
+          go-version: '1.24' # Khớp chính xác với đời Go 1.24 trên máy của bạn
+          cache: false       # Tắt cache để xóa sạch các lỗi cấu hình cũ
 
       - name: Run Go Vet
         run: |
-          # Tự động tìm và chạy kiểm tra ở mọi thư mục có file go.mod
           for mod in $(find . -name "go.mod"); do
             dir=$(dirname "$mod")
             echo "==== Kiểm tra thư mục: $dir ===="
