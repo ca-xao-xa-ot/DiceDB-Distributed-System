@@ -18,6 +18,6 @@ func NewPageHandler(cluster *services.ClusterService) *PageHandler {
 
 func (h *PageHandler) Index(c *gin.Context) {
 	c.HTML(http.StatusOK, "index.html", gin.H{
-		"title": "Dice Distributed KV Store Dashboard",
+		"title": "DiceDB Distributed Monitoring Dashboard",
 	})
 }

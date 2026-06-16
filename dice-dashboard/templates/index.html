@@ -1,206 +1,127 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ .title }}</title>
-    <link rel="stylesheet" href="/static/css/style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ .title }}</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="/static/css/style.css" />
 </head>
 <body>
-    <aside class="sidebar">
-        <div class="brand-block">
-            <div class="brand-logo">DD</div>
-            <div>
-                <p class="brand-caption">Distributed Systems Project</p>
-                <h1>Dice Distributed KV Store Dashboard</h1>
-            </div>
+  <aside class="sidebar">
+    <h1>DiceDB Monitor</h1>
+    <p class="subtitle">Distributed Systems Demo</p>
+    <nav>
+      <button class="nav-item active" data-view="dashboard-view">Dashboard</button>
+      <button class="nav-item" data-view="nodes-view">Cluster Nodes</button>
+      <button class="nav-item" data-view="heartbeat-view">Heartbeat</button>
+      <button class="nav-item" data-view="replication-view">Replication</button>
+      <button class="nav-item" data-view="activity-view">Activity Log</button>
+      <button class="nav-item" data-view="fault-view">Fault Injection</button>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <section id="dashboard-view" class="view active">
+      <div class="view-header">
+        <div>
+          <h2>Dashboard Overview</h2>
+          <p>Mini observability dashboard for distributed-system demo.</p>
         </div>
-
-        <nav class="sidebar-nav">
-            <button class="nav-item active" data-target="dashboard">Dashboard</button>
-            <button class="nav-item" data-target="cluster">Cluster Nodes</button>
-            <button class="nav-item" data-target="replication">Replication Monitor</button>
-            <button class="nav-item" data-target="heartbeat">Heartbeat Monitor</button>
-            <button class="nav-item" data-target="activity">Activity Log</button>
-        </nav>
-
-        <div class="sidebar-footer">
-            <div class="status-card">
-                <span class="status-dot online-dot"></span>
-                <span id="storageMode">Loading storage mode...</span>
-            </div>
+        <div class="refresh-card">
+          <span>Last refresh</span>
+          <strong id="lastRefreshLabel">--</strong>
         </div>
-    </aside>
+      </div>
 
-    <main class="content-shell">
-        <section id="view-dashboard" class="view-section active">
-            <div class="section-hero">
-                <div>
-                    <p class="eyebrow">Light Theme Dashboard</p>
-                    <h2>Dashboard Overview</h2>
-                    <p class="section-subtitle">
-                        Theo dõi nhanh trạng thái cluster Dice Distributed KV Store với giao diện nhiều trang,
-                        điều hướng sidebar và dữ liệu cập nhật theo thời gian thực.
-                    </p>
-                </div>
-                <div class="refresh-card">
-                    <span>Lần đồng bộ gần nhất</span>
-                    <strong id="lastUpdated">--</strong>
-                    <small id="lastRefreshLabel">Đang đồng bộ...</small>
-                </div>
-            </div>
+      <div class="stats-grid">
+        <article class="stat-card"><span>Total Nodes</span><strong id="totalNodes">0</strong></article>
+        <article class="stat-card"><span>Online Nodes</span><strong id="nodeOnline">0</strong></article>
+        <article class="stat-card"><span>Offline Nodes</span><strong id="nodeOffline">0</strong></article>
+        <article class="stat-card"><span>Total Keys</span><strong id="totalKeys">0</strong></article>
+        <article class="stat-card"><span>Replicated Commands</span><strong id="replicatedCommands">0</strong></article>
+        <article class="stat-card"><span>Average Latency</span><strong id="averageLatency">0 ms</strong></article>
+        <article class="stat-card"><span>Replication Success Rate</span><strong id="replicationSuccessRate">0%</strong></article>
+      </div>
 
-            <div class="stats-grid">
-                <article class="stat-card">
-                    <span class="stat-label">Tổng số node</span>
-                    <strong id="totalNodes">0</strong>
-                </article>
-                <article class="stat-card">
-                    <span class="stat-label">Node Online</span>
-                    <strong id="nodeOnline">0</strong>
-                </article>
-                <article class="stat-card">
-                    <span class="stat-label">Node Offline</span>
-                    <strong id="nodeOffline">0</strong>
-                </article>
-                <article class="stat-card">
-                    <span class="stat-label">Tổng số Key</span>
-                    <strong id="totalKeys">0</strong>
-                </article>
-            </div>
+      <div id="healthBanner" class="health-banner healthy">
+        <strong id="healthBannerTitle">Cluster stable</strong>
+        <span id="healthBannerText">All replicas are synchronized and heartbeat is normal.</span>
+      </div>
 
-            <div class="dashboard-panels">
-                <article class="panel info-panel">
-                    <div class="panel-header">
-                        <h3>Kiến trúc mô phỏng</h3>
-                        <span class="tag tag-primary">MVC đơn giản</span>
-                    </div>
-                    <p>
-                        Hệ thống mô phỏng mô hình Master - Replica với Golang, Gin và REST API.
-                        Sidebar nhiều trang giúp trình bày rõ từng thành phần khi demo trước lớp.
-                    </p>
-                </article>
-                <article class="panel info-panel accent-panel">
-                    <div class="panel-header">
-                        <h3>Realtime Monitoring</h3>
-                        <span class="tag tag-accent">JavaScript thuần</span>
-                    </div>
-                    <p>
-                        Dữ liệu overview, node, heartbeat, replication và activity log được làm mới tự động,
-                        không cần reload toàn trang.
-                    </p>
-                </article>
-            </div>
+      <div class="dashboard-panels">
+        <section class="panel">
+          <h3>Cluster Statistics</h3>
+          <div class="metric-grid">
+            <div class="summary-metric-card"><span>Heartbeat Checks</span><strong id="heartbeatChecks">0</strong></div>
+            <div class="summary-metric-card"><span>Failed Replications</span><strong id="failedReplications">0</strong></div>
+            <div class="summary-metric-card"><span>Max Replication Delay</span><strong id="maxReplicationDelay">0 ms</strong></div>
+            <div class="summary-metric-card"><span>Last Replication At</span><strong id="lastReplicationAt">--</strong></div>
+            <div class="summary-metric-card"><span>Storage Mode</span><strong id="storageMode">--</strong></div>
+          </div>
         </section>
-
-        <section id="view-cluster" class="view-section">
-            <div class="section-heading">
-                <div>
-                    <p class="eyebrow">Cluster Nodes</p>
-                    <h2>Chi tiết các node trong cluster</h2>
-                </div>
-            </div>
-            <div id="nodeCards" class="node-grid"></div>
+        <section class="panel charts-panel">
+          <div class="chart-card">
+            <h3>Latency Trend</h3>
+            <canvas id="latencyTrendChart"></canvas>
+          </div>
+          <div class="chart-card">
+            <h3>Replication Delay Trend</h3>
+            <canvas id="replicationTrendChart"></canvas>
+          </div>
         </section>
+      </div>
+    </section>
 
-        <section id="view-replication" class="view-section">
-            <div class="section-heading">
-                <div>
-                    <p class="eyebrow">Replication Monitor</p>
-                    <h2>Mô phỏng Master → Replica</h2>
-                </div>
-            </div>
+    <section id="nodes-view" class="view">
+      <h2>Cluster Nodes</h2>
+      <div id="nodeCards" class="node-grid"></div>
+    </section>
 
-            <div class="replication-layout">
-                <article class="panel">
-                    <div class="lane-group">
-                        <div class="replication-lane transmitting">
-                            <div class="flow-node master-node">Master</div>
-                            <div class="flow-track vertical-track">
-                                <span class="flow-packet"></span>
-                            </div>
-                            <div class="flow-node replica-node">Replica1</div>
-                        </div>
+    <section id="heartbeat-view" class="view">
+      <h2>Heartbeat Monitor</h2>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Node</th><th>Status</th><th>Latency</th><th>Uptime</th><th>Health</th><th>Failures</th><th>Last Heartbeat</th><th>Last Seen</th>
+          </tr>
+        </thead>
+        <tbody id="heartbeatTable"></tbody>
+      </table>
+    </section>
 
-                        <div class="replication-lane transmitting delay-lane">
-                            <div class="flow-node master-node">Master</div>
-                            <div class="flow-track vertical-track">
-                                <span class="flow-packet"></span>
-                            </div>
-                            <div class="flow-node replica-node">Replica2</div>
-                        </div>
-                    </div>
-                </article>
+    <section id="replication-view" class="view">
+      <h2>Replication Monitor</h2>
+      <div class="metric-grid">
+        <div class="summary-metric-card"><span>Replica1 Delay</span><strong id="replica1Delay">0 ms</strong></div>
+        <div class="summary-metric-card"><span>Replica2 Delay</span><strong id="replica2Delay">0 ms</strong></div>
+        <div class="summary-metric-card"><span>Max Delay</span><strong id="replicationMaxDelay">0 ms</strong></div>
+        <div class="summary-metric-card"><span>Replicated Commands</span><strong id="replicationCommandCount">0</strong></div>
+      </div>
+      <form id="replicationForm" class="kv-form">
+        <input id="keyInput" placeholder="key" />
+        <input id="valueInput" placeholder="value" />
+        <button type="submit">SET & Replicate</button>
+      </form>
+      <div id="kvResult" class="kv-result"></div>
+      <div id="replicationLog" class="log-list"></div>
+    </section>
 
-                <article class="panel">
-                    <div class="panel-header">
-                        <h3>Replication SET</h3>
-                        <span class="tag tag-accent">Key-Value Form</span>
-                    </div>
-                    <form id="replicationForm" class="kv-form">
-                        <label>
-                            <span>Key</span>
-                            <input type="text" id="keyInput" placeholder="Ví dụ: student" required>
-                        </label>
-                        <label>
-                            <span>Value</span>
-                            <textarea id="valueInput" rows="4" placeholder="Ví dụ: Giang" required></textarea>
-                        </label>
-                        <div class="button-group">
-                            <button type="submit" class="btn btn-primary">SET</button>
-                        </div>
-                    </form>
-                    <div id="kvResult" class="result-box">Kết quả replication sẽ hiển thị tại đây.</div>
-                </article>
-            </div>
+    <section id="activity-view" class="view">
+      <div class="view-header">
+        <h2>Activity Log</h2>
+        <button id="clearLogBtn" class="secondary-btn">Clear Logs</button>
+      </div>
+      <div id="activityLog" class="log-list"></div>
+    </section>
 
-            <article class="panel replication-log-panel">
-                <div class="panel-header">
-                    <h3>Replication Events</h3>
-                    <span class="muted">Log mới nhất hiển thị trên cùng</span>
-                </div>
-                <div id="replicationLog" class="log-list compact-list"></div>
-            </article>
-        </section>
+    <section id="fault-view" class="view">
+      <h2>Fault Injection</h2>
+      <p class="subtitle-inline">Useful for defense demo: fail node, recover node, inject artificial latency.</p>
+      <div id="faultPanel" class="fault-grid"></div>
+    </section>
+  </main>
 
-        <section id="view-heartbeat" class="view-section">
-            <div class="section-heading">
-                <div>
-                    <p class="eyebrow">Heartbeat Monitor</p>
-                    <h2>Trạng thái heartbeat của cluster</h2>
-                </div>
-                <span class="muted">Offline nếu heartbeat quá 10 giây</span>
-            </div>
-            <article class="panel">
-                <div class="table-wrap">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Node</th>
-                                <th>Last Heartbeat</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="heartbeatTable"></tbody>
-                    </table>
-                </div>
-            </article>
-        </section>
-
-        <section id="view-activity" class="view-section">
-            <div class="section-heading activity-heading">
-                <div>
-                    <p class="eyebrow">Activity Log</p>
-                    <h2>Log thời gian thực</h2>
-                </div>
-                <button id="clearLogBtn" class="btn btn-outline">Clear Log</button>
-            </div>
-            <article class="panel">
-                <div id="activityLog" class="log-list activity-list"></div>
-            </article>
-        </section>
-    </main>
-
-    <script src="/static/js/app.js"></script>
+  <script src="/static/js/app.js"></script>
 </body>
 </html>

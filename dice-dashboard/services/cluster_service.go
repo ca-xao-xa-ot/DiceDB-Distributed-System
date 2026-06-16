@@ -1,227 +1,182 @@
 package services
 
 import (
-	"context"
-	"errors"
 	"fmt"
-	"net" // Đã thêm thư viện net để kết nối TCP thật
+	"strings"
 	"sync"
 	"time"
 )
 
 type ClusterService struct {
-	mu               sync.RWMutex
-	store            KVStore
-	nodes            []Node
-	activityLogs     []ActivityLog
-	replicationLogs  []ReplicationLog
-	heartbeatTimeout time.Duration
+	mu                    sync.RWMutex
+	store                 KVStore
+	nodes                 []Node
+	activityLogs          []ActivityLog
+	replicationLogs       []ReplicationLog
+	heartbeatTimeout      time.Duration
+	replicatedCommands    int
+	failedReplications    int
+	replicationAttempts   int
+	heartbeatChecks       int
+	heartbeatSamples      int64
+	heartbeatLatencySum   int64
+	latencyTrend          []MetricPoint
+	replicationDelayTrend []MetricPoint
 }
 
-func NewClusterService(store KVStore, timeout time.Duration) *ClusterService {
+func NewClusterService(store KVStore, heartbeatTimeout time.Duration) *ClusterService {
 	now := time.Now()
 	s := &ClusterService{
 		store:            store,
-		heartbeatTimeout: timeout,
+		heartbeatTimeout: heartbeatTimeout,
 		nodes: []Node{
-			{Name: "Master", Role: "master", Port: 7379, Status: "Online", KeyCount: 0, MemoryUsage: "24 MB", LastHeartbeat: now},
-			{Name: "Replica1", Role: "replica", Port: 7380, Status: "Online", KeyCount: 0, MemoryUsage: "18 MB", LastHeartbeat: now},
-			{Name: "Replica2", Role: "replica", Port: 7381, Status: "Online", KeyCount: 0, MemoryUsage: "19 MB", LastHeartbeat: now},
+			{Name: "Master", Role: "master", Port: 7379, Status: "Online", MemoryUsage: "32 MB", UptimeStartedAt: now, LastHeartbeat: now, LastSeen: "just now", HealthScore: 100, HealthStatus: "Healthy"},
+			{Name: "Replica1", Role: "replica", Port: 7380, Status: "Online", MemoryUsage: "28 MB", UptimeStartedAt: now, LastHeartbeat: now, LastSeen: "just now", HealthScore: 100, HealthStatus: "Healthy"},
+			{Name: "Replica2", Role: "replica", Port: 7381, Status: "Online", MemoryUsage: "29 MB", UptimeStartedAt: now, LastHeartbeat: now, LastSeen: "just now", HealthScore: 100, HealthStatus: "Healthy"},
 		},
-		activityLogs:    make([]ActivityLog, 0, 128),
-		replicationLogs: make([]ReplicationLog, 0, 128),
 	}
-
-	s.seedData()
+	s.refreshKeyCountLocked()
+	s.appendActivityLocked("CLUSTER", "INFO", "Dashboard monitoring service initialized")
+	s.recordHistoryLocked(0, 0)
 	return s
 }
 
-func (s *ClusterService) seedData() {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-	_ = s.store.Set(ctx, "project:title", "Dice Distributed KV Store Dashboard")
-	_ = s.store.Set(ctx, "project:course", "He Phan Tan")
-	_ = s.store.Set(ctx, "cluster:mode", "Master-Replica Simulation")
-	s.mu.Lock()
-	s.refreshKeyCountLocked()
-	s.mu.Unlock()
-}
-
 func (s *ClusterService) StartHeartbeatSimulation() {
+	ticker := time.NewTicker(3 * time.Second)
 	go func() {
-		for {
-			time.Sleep(3 * time.Second)
+		defer ticker.Stop()
+		for range ticker.C {
 			s.tickHeartbeat()
 		}
-	}()
+		}()
 }
 
-// BƯỚC 1: ĐÃ SỬA THÀNH PING TCP THẬT (CHUẨN RESP)
 func (s *ClusterService) tickHeartbeat() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	now := time.Now()
+	var avgLatency int64
+	var maxDelay int64
+
 	for i := range s.nodes {
-		addr := fmt.Sprintf("127.0.0.1:%d", s.nodes[i].Port)
-		
-		// Thử kết nối TCP tới Node trong 1 giây
-		conn, err := net.DialTimeout("tcp", addr, 1*time.Second)
-		if err == nil {
-			// Nếu kết nối thành công, gửi PING chuẩn RESP để không làm sập server
-			_, _ = conn.Write([]byte("*1\r\n$4\r\nPING\r\n"))
-			conn.Close()
+		node := &s.nodes[i]
+		s.heartbeatChecks++
 
-			s.nodes[i].LastHeartbeat = now
-			s.appendActivityLocked("HEARTBEAT", fmt.Sprintf("%s heartbeat received", s.nodes[i].Name))
+		if node.SimulatedFailure {
+			node.Status = "Offline"
+			node.ConsecutiveFailures++
+			node.UptimeSeconds = 0
+			node.LastSeen = fmt.Sprintf("%ds ago", int(time.Since(node.LastHeartbeat).Seconds()))
+			node.HealthScore, node.HealthStatus = calculateHealth(node.Status, node.LatencyMs, node.ConsecutiveFailures, node.ReplicationDelayMs)
+			s.appendActivityLocked("HEARTBEAT", "WARNING", fmt.Sprintf("%s heartbeat timeout detected", node.Name))
+			continue
+		}
+
+		latency := int64(2 + i*3)
+		if node.InjectedLatencyMs > 0 {
+			latency += node.InjectedLatencyMs
+		}
+		node.Status = "Online"
+		node.LastHeartbeat = now
+		node.LastSeen = "just now"
+		node.LatencyMs = latency
+		node.UptimeSeconds = int64(now.Sub(node.UptimeStartedAt).Seconds())
+		node.ConsecutiveFailures = 0
+		node.HealthScore, node.HealthStatus = calculateHealth(node.Status, node.LatencyMs, node.ConsecutiveFailures, node.ReplicationDelayMs)
+		s.heartbeatSamples++
+		s.heartbeatLatencySum += latency
+		avgLatency += latency
+		if node.ReplicationDelayMs > maxDelay {
+			maxDelay = node.ReplicationDelayMs
 		}
 	}
 
-	// Hàm này sẽ tự động chuyển node thành Offline nếu quá hạn timeout
-	s.refreshNodeStatusesLocked()
-}
-
-// BƯỚC 2: ĐÃ SỬA ĐỂ TỰ ĐỘNG REPLICATE SANG REPLICA QUA TCP
-func (s *ClusterService) Set(key, value string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-
-	// 1. Lưu vào CSDL nội bộ trước
-	if err := s.store.Set(ctx, key, value); err != nil {
-		return err
+	if len(s.nodes) > 0 {
+		avgLatency = avgLatency / int64(len(s.nodes))
 	}
-
-	s.mu.Lock()
-	s.refreshKeyCountLocked()
-	s.appendActivityLocked("SET", fmt.Sprintf("SET %s=%s", key, value))
-	
-	// 2. Định dạng lệnh SET sang chuẩn RESP để đồng bộ
-	respCmd := fmt.Sprintf("*3\r\n$3\r\nSET\r\n$%d\r\n%s\r\n$%d\r\n%s\r\n", len(key), key, len(value), value)
-
-	// 3. Đẩy sang các máy Replica qua mạng
-	for i := range s.nodes {
-		if s.nodes[i].Role == "replica" {
-			go func(node Node, cmd string) {
-				addr := fmt.Sprintf("127.0.0.1:%d", node.Port)
-				conn, err := net.DialTimeout("tcp", addr, 2*time.Second)
-				if err == nil {
-					defer conn.Close()
-					_, _ = conn.Write([]byte(cmd))
-
-					s.mu.Lock()
-					s.appendReplicationLocked(node.Name, "SET", fmt.Sprintf("Replicated to %s", node.Name))
-					s.mu.Unlock()
-				}
-			}(s.nodes[i], respCmd)
-		}
-	}
-	s.mu.Unlock()
-
-	return nil
-}
-
-func (s *ClusterService) Get(key string) (string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-
-	value, err := s.store.Get(ctx, key)
-	if err != nil {
-		if errors.Is(err, ErrKeyNotFound) {
-			s.mu.Lock()
-			s.appendActivityLocked("GET", fmt.Sprintf("GET %s not found", key))
-			s.mu.Unlock()
-		}
-		return "", err
-	}
-
-	s.mu.Lock()
-	s.appendActivityLocked("GET", fmt.Sprintf("GET %s=%s", key, value))
-	s.mu.Unlock()
-	return value, nil
-}
-
-func (s *ClusterService) Delete(key string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-
-	if err := s.store.Delete(ctx, key); err != nil {
-		return err
-	}
-
-	s.mu.Lock()
-	s.refreshKeyCountLocked()
-	s.appendActivityLocked("DELETE", fmt.Sprintf("DELETE %s", key))
-
-	// Bổ sung đồng bộ lệnh DEL sang các node Replica cho đồng bộ toàn diện
-	respCmdDEL := fmt.Sprintf("*2\r\n$3\r\nDEL\r\n$%d\r\n%s\r\n", len(key), key)
-	
-	for i := range s.nodes {
-		if s.nodes[i].Role == "replica" {
-			go func(node Node, cmd string) {
-				addr := fmt.Sprintf("127.0.0.1:%d", node.Port)
-				conn, err := net.DialTimeout("tcp", addr, 2*time.Second)
-				if err == nil {
-					defer conn.Close()
-					_, _ = conn.Write([]byte(cmd))
-
-					s.mu.Lock()
-					s.appendReplicationLocked(node.Name, "DELETE", fmt.Sprintf("Delete replicated to %s", node.Name))
-					s.mu.Unlock()
-				}
-			}(s.nodes[i], respCmdDEL)
-		}
-	}
-	s.mu.Unlock()
-
-	return nil
+	s.recordHistoryLocked(avgLatency, maxDelay)
 }
 
 func (s *ClusterService) GetOverview() DashboardOverview {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.refreshNodeStatusesLocked()
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	online, offline := s.onlineOfflineLocked()
+	return DashboardOverview{
+		TotalNodes:         len(s.nodes),
+		NodeOnline:         online,
+		NodeOffline:        offline,
+		TotalKeys:          s.store.Count(),
+		ReplicatedCommands: s.replicatedCommands,
+		AverageLatencyMs:   s.averageHeartbeatLatencyLocked(),
+		LastUpdated:        time.Now().Format("15:04:05"),
+		StorageMode:        "In-memory demo mode",
+	}
+}
 
-	online := 0
+func (s *ClusterService) GetClusterStats() ClusterStats {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	online, offline := s.onlineOfflineLocked()
+	maxDelay := int64(0)
+	lastReplication := "No replication yet"
 	for _, node := range s.nodes {
-		if node.Status == "Online" {
-			online++
+		if node.ReplicationDelayMs > maxDelay {
+			maxDelay = node.ReplicationDelayMs
+		}
+		if !node.LastReplicationAt.IsZero() && (lastReplication == "No replication yet" || node.LastReplicationAt.After(parseTimeFallback(lastReplication))) {
+			lastReplication = node.LastReplicationAt.Format("15:04:05 02/01/2006")
 		}
 	}
-
-	count := 0
-	if len(s.nodes) > 0 {
-		count = s.nodes[0].KeyCount
+	return ClusterStats{
+		TotalNodes:             len(s.nodes),
+		OnlineNodes:            online,
+		OfflineNodes:           offline,
+		TotalKeys:              s.store.Count(),
+		ReplicatedCommands:     s.replicatedCommands,
+		FailedReplications:     s.failedReplications,
+		ReplicationAttempts:    s.replicationAttempts,
+		ReplicationSuccessRate: s.replicationSuccessRateLocked(),
+		TotalHeartbeatChecks:   s.heartbeatChecks,
+		AverageLatencyMs:       s.averageHeartbeatLatencyLocked(),
+		MaxReplicationDelay:    maxDelay,
+		LastReplicationAt:      lastReplication,
+		StorageMode:            "In-memory demo mode",
 	}
+}
 
-	return DashboardOverview{
-		TotalNodes:  len(s.nodes),
-		NodeOnline:  online,
-		NodeOffline: len(s.nodes) - online,
-		TotalKeys:   count,
-		LastUpdated: time.Now().Format("02/01/2006 15:04:05"),
-		StorageMode: s.store.Mode(),
+func (s *ClusterService) GetMetricsHistory() MetricsHistory {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return MetricsHistory{
+		LatencyTrend:          append([]MetricPoint(nil), s.latencyTrend...),
+		ReplicationDelayTrend: append([]MetricPoint(nil), s.replicationDelayTrend...),
 	}
 }
 
 func (s *ClusterService) GetNodes() []Node {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.refreshNodeStatusesLocked()
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	result := make([]Node, len(s.nodes))
 	copy(result, s.nodes)
 	return result
 }
 
 func (s *ClusterService) GetHeartbeatRows() []HeartbeatRow {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.refreshNodeStatusesLocked()
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	rows := make([]HeartbeatRow, 0, len(s.nodes))
 	for _, node := range s.nodes {
 		rows = append(rows, HeartbeatRow{
-			Node:          node.Name,
-			LastHeartbeat: node.LastHeartbeat.Format("15:04:05 - 02/01/2006"),
-			Status:        node.Status,
+			Node:                node.Name,
+			LastHeartbeat:       node.LastHeartbeat.Format("15:04:05 02/01"),
+			LastSeen:            node.LastSeen,
+			Status:              node.Status,
+			LatencyMs:           node.LatencyMs,
+			Uptime:              formatDuration(node.UptimeSeconds),
+			ConsecutiveFailures: node.ConsecutiveFailures,
+			HealthScore:         node.HealthScore,
+			HealthStatus:        node.HealthStatus,
 		})
 	}
 	return rows
@@ -236,70 +191,242 @@ func (s *ClusterService) GetActivityLogs(limit int) []ActivityLog {
 func (s *ClusterService) GetReplicationLogs(limit int) []ReplicationLog {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	return reverseLimitReplication(s.replicationLogs, limit)
+	return reverseLimit(s.replicationLogs, limit)
 }
 
 func (s *ClusterService) ClearLogs() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.activityLogs = make([]ActivityLog, 0, 128)
-	s.replicationLogs = make([]ReplicationLog, 0, 128)
+	s.activityLogs = nil
+	s.replicationLogs = nil
+	s.appendActivityLocked("SYSTEM", "INFO", "Logs cleared from dashboard")
+}
+
+func (s *ClusterService) Set(key, value string) ([]ReplicationResult, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if err := s.store.Set(key, value); err != nil {
+		return nil, err
+	}
+	s.refreshKeyCountLocked()
+	s.appendActivityLocked("SET", "SUCCESS", fmt.Sprintf("SET %s=%s", key, value))
+	results := s.replicateCommandLocked("SET", fmt.Sprintf("%s=%s", key, value))
+	return results, nil
+}
+
+func (s *ClusterService) Get(key string) (string, error) {
+	return s.store.Get(key)
+}
+
+func (s *ClusterService) Delete(key string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if err := s.store.Delete(key); err != nil {
+		return err
+	}
+	s.refreshKeyCountLocked()
+	s.appendActivityLocked("DELETE", "SUCCESS", fmt.Sprintf("DELETE %s", key))
+	s.replicateCommandLocked("DELETE", key)
+	return nil
+}
+
+func (s *ClusterService) SimulateNodeFailure(name string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	node := s.findNodeLocked(name)
+	if node == nil {
+		return fmt.Errorf("node %s not found", name)
+	}
+	node.SimulatedFailure = true
+	node.Status = "Offline"
+	node.ConsecutiveFailures++
+	node.UptimeSeconds = 0
+	node.HealthScore, node.HealthStatus = calculateHealth(node.Status, node.LatencyMs, node.ConsecutiveFailures, node.ReplicationDelayMs)
+	s.appendActivityLocked("FAULT", "ERROR", fmt.Sprintf("Simulated failure injected on %s", node.Name))
+	return nil
+}
+
+func (s *ClusterService) RecoverNode(name string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	node := s.findNodeLocked(name)
+	if node == nil {
+		return fmt.Errorf("node %s not found", name)
+	}
+	node.SimulatedFailure = false
+	node.Status = "Online"
+	node.UptimeStartedAt = time.Now()
+	node.UptimeSeconds = 0
+	node.ConsecutiveFailures = 0
+	node.LastHeartbeat = time.Now()
+	node.LastSeen = "just now"
+	node.HealthScore, node.HealthStatus = calculateHealth(node.Status, node.LatencyMs, node.ConsecutiveFailures, node.ReplicationDelayMs)
+	s.appendActivityLocked("RECOVERY", "SUCCESS", fmt.Sprintf("Node %s recovered", node.Name))
+	return nil
+}
+
+func (s *ClusterService) InjectLatency(name string, milliseconds int64) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	node := s.findNodeLocked(name)
+	if node == nil {
+		return fmt.Errorf("node %s not found", name)
+	}
+	node.InjectedLatencyMs = milliseconds
+	node.LatencyMs = milliseconds + 5
+	node.HealthScore, node.HealthStatus = calculateHealth(node.Status, node.LatencyMs, node.ConsecutiveFailures, node.ReplicationDelayMs)
+	s.appendActivityLocked("LATENCY", "WARNING", fmt.Sprintf("Injected %dms latency on %s", milliseconds, node.Name))
+	return nil
+}
+
+func (s *ClusterService) ClearLatency(name string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	node := s.findNodeLocked(name)
+	if node == nil {
+		return fmt.Errorf("node %s not found", name)
+	}
+	node.InjectedLatencyMs = 0
+	node.LatencyMs = 0
+	node.HealthScore, node.HealthStatus = calculateHealth(node.Status, node.LatencyMs, node.ConsecutiveFailures, node.ReplicationDelayMs)
+	s.appendActivityLocked("LATENCY", "INFO", fmt.Sprintf("Cleared injected latency on %s", node.Name))
+	return nil
+}
+
+func (s *ClusterService) replicateCommandLocked(action, payload string) []ReplicationResult {
+	results := make([]ReplicationResult, 0, 2)
+	var maxDelay int64
+	for i := range s.nodes {
+		node := &s.nodes[i]
+		if node.Role != "replica" {
+			continue
+		}
+		s.replicationAttempts++
+		delay := int64(4 + i*2)
+		if node.InjectedLatencyMs > 0 {
+			delay += node.InjectedLatencyMs
+		}
+		if node.SimulatedFailure {
+			s.failedReplications++
+			node.ReplicationDelayMs = 0
+			node.HealthScore, node.HealthStatus = calculateHealth("Offline", node.LatencyMs, node.ConsecutiveFailures+1, node.ReplicationDelayMs)
+			message := fmt.Sprintf("%s failed on %s", action, node.Name)
+			results = append(results, ReplicationResult{Target: node.Name, Status: "failed", DelayMs: 0, Message: message})
+			s.replicationLogs = append(s.replicationLogs, ReplicationLog{Timestamp: time.Now().Format("15:04:05"), Target: node.Name, Action: action, Message: message, DelayMs: 0, Success: false})
+			s.appendActivityLocked("REPLICATION", "ERROR", message)
+			continue
+		}
+		node.ReplicatedCommands++
+		node.ReplicationDelayMs = delay
+		node.LastReplicationAt = time.Now()
+		node.HealthScore, node.HealthStatus = calculateHealth(node.Status, node.LatencyMs, node.ConsecutiveFailures, node.ReplicationDelayMs)
+		s.replicatedCommands++
+		if delay > maxDelay {
+			maxDelay = delay
+		}
+		message := fmt.Sprintf("%s replicated to %s (%s)", action, node.Name, payload)
+		results = append(results, ReplicationResult{Target: node.Name, Status: "success", DelayMs: delay, Message: message})
+		s.replicationLogs = append(s.replicationLogs, ReplicationLog{Timestamp: time.Now().Format("15:04:05"), Target: node.Name, Action: action, Message: message, DelayMs: delay, Success: true})
+		s.appendActivityLocked("REPLICATION", "SUCCESS", message)
+	}
+	s.recordHistoryLocked(s.averageHeartbeatLatencyLocked(), maxDelay)
+	return results
 }
 
 func (s *ClusterService) refreshKeyCountLocked() {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-	count, err := s.store.Count(ctx)
-	if err != nil {
-		return
-	}
-
+	count := s.store.Count()
 	for i := range s.nodes {
 		s.nodes[i].KeyCount = count
-		base := 18 + count/2 + i
-		s.nodes[i].MemoryUsage = fmt.Sprintf("%d MB", base)
 	}
 }
 
-func (s *ClusterService) refreshNodeStatusesLocked() {
-	now := time.Now()
+func (s *ClusterService) onlineOfflineLocked() (int, int) {
+	online, offline := 0, 0
+	for _, node := range s.nodes {
+		if strings.EqualFold(node.Status, "Online") {
+			online++
+		} else {
+			offline++
+		}
+	}
+	return online, offline
+}
+
+func (s *ClusterService) averageHeartbeatLatencyLocked() int64 {
+	if s.heartbeatSamples == 0 {
+		return 0
+	}
+	return s.heartbeatLatencySum / s.heartbeatSamples
+}
+
+func (s *ClusterService) replicationSuccessRateLocked() float64 {
+	if s.replicationAttempts == 0 {
+		return 100
+	}
+	successes := s.replicationAttempts - s.failedReplications
+	return (float64(successes) / float64(s.replicationAttempts)) * 100
+}
+
+func (s *ClusterService) appendActivityLocked(kind, severity, message string) {
+	s.activityLogs = append(s.activityLogs, ActivityLog{Timestamp: time.Now().Format("15:04:05"), Type: kind, Severity: severity, Message: message})
+	if len(s.activityLogs) > 80 {
+		s.activityLogs = s.activityLogs[len(s.activityLogs)-80:]
+	}
+}
+
+func (s *ClusterService) recordHistoryLocked(avgLatency, maxDelay int64) {
+	timestamp := time.Now().Format("15:04:05")
+	s.latencyTrend = append(s.latencyTrend, MetricPoint{Timestamp: timestamp, Value: avgLatency})
+	s.replicationDelayTrend = append(s.replicationDelayTrend, MetricPoint{Timestamp: timestamp, Value: maxDelay})
+	if len(s.latencyTrend) > 20 {
+		s.latencyTrend = s.latencyTrend[len(s.latencyTrend)-20:]
+	}
+	if len(s.replicationDelayTrend) > 20 {
+		s.replicationDelayTrend = s.replicationDelayTrend[len(s.replicationDelayTrend)-20:]
+	}
+}
+
+func (s *ClusterService) findNodeLocked(name string) *Node {
 	for i := range s.nodes {
-		nextStatus := "Online"
-		if now.Sub(s.nodes[i].LastHeartbeat) > s.heartbeatTimeout {
-			nextStatus = "Offline"
+		if strings.EqualFold(s.nodes[i].Name, name) {
+			return &s.nodes[i]
 		}
+	}
+	return nil
+}
 
-		if s.nodes[i].Status != nextStatus && nextStatus == "Offline" {
-			s.appendActivityLocked("TIMEOUT", fmt.Sprintf("%s timeout", s.nodes[i].Name))
-		}
-
-		s.nodes[i].Status = nextStatus
+func calculateHealth(status string, latencyMs int64, failures int, replicationDelayMs int64) (int, string) {
+	score := 100
+	if !strings.EqualFold(status, "Online") {
+		score -= 55
+	}
+	score -= int(latencyMs / 5)
+	score -= failures * 10
+	score -= int(replicationDelayMs / 10)
+	if score < 0 {
+		score = 0
+	}
+	switch {
+	case score >= 80:
+		return score, "Healthy"
+	case score >= 55:
+		return score, "Warning"
+	default:
+		return score, "Critical"
 	}
 }
 
-func (s *ClusterService) appendActivityLocked(logType, message string) {
-	s.activityLogs = append(s.activityLogs, ActivityLog{
-		Timestamp: time.Now().Format("15:04:05"),
-		Type:      logType,
-		Message:   message,
-	})
-	if len(s.activityLogs) > 200 {
-		s.activityLogs = s.activityLogs[len(s.activityLogs)-200:]
+func formatDuration(seconds int64) string {
+	h := seconds / 3600
+	m := (seconds % 3600) / 60
+	s := seconds % 60
+	if h > 0 {
+		return fmt.Sprintf("%dh %dm %ds", h, m, s)
 	}
-}
-
-func (s *ClusterService) appendReplicationLocked(target, action, message string) {
-	entry := ReplicationLog{
-		Timestamp: time.Now().Format("15:04:05"),
-		Target:    target,
-		Action:    action,
-		Message:   message,
+	if m > 0 {
+		return fmt.Sprintf("%dm %ds", m, s)
 	}
-	s.replicationLogs = append(s.replicationLogs, entry)
-	if len(s.replicationLogs) > 100 {
-		s.replicationLogs = s.replicationLogs[len(s.replicationLogs)-100:]
-	}
-	s.appendActivityLocked("REPLICATION", message)
+	return fmt.Sprintf("%ds", s)
 }
 
 func reverseLimit[T any](items []T, limit int) []T {
@@ -313,14 +440,10 @@ func reverseLimit[T any](items []T, limit int) []T {
 	return result
 }
 
-func reverseLimitReplication(items []ReplicationLog, limit int) []ReplicationLog {
-	if limit <= 0 || limit > len(items) {
-		limit = len(items)
+func parseTimeFallback(value string) time.Time {
+	t, err := time.Parse("15:04:05 02/01/2006", value)
+	if err != nil {
+		return time.Time{}
 	}
-	result := make([]ReplicationLog, 0, limit)
-	for i := len(items) - 1; i >= 0 && len(result) < limit; i-- {
-		result = append(result, items[i])
-	}
-	return result
+	return t
 }
-// trigger linter run

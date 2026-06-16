@@ -22,6 +22,14 @@ func (h *APIHandler) GetOverview(c *gin.Context) {
 	c.JSON(http.StatusOK, h.cluster.GetOverview())
 }
 
+func (h *APIHandler) GetClusterStats(c *gin.Context) {
+	c.JSON(http.StatusOK, h.cluster.GetClusterStats())
+}
+
+func (h *APIHandler) GetMetricsHistory(c *gin.Context) {
+	c.JSON(http.StatusOK, h.cluster.GetMetricsHistory())
+}
+
 func (h *APIHandler) GetNodes(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"nodes": h.cluster.GetNodes()})
 }
@@ -45,6 +53,47 @@ func (h *APIHandler) GetReplicationLogs(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"logs": h.cluster.GetReplicationLogs(limit)})
 }
 
+func (h *APIHandler) FailNode(c *gin.Context) {
+	node := c.Param("node")
+	if err := h.cluster.SimulateNodeFailure(node); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Đã mô phỏng node lỗi", "node": node})
+}
+
+func (h *APIHandler) RecoverNode(c *gin.Context) {
+	node := c.Param("node")
+	if err := h.cluster.RecoverNode(node); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Đã khôi phục node", "node": node})
+}
+
+func (h *APIHandler) InjectLatency(c *gin.Context) {
+	node := c.Param("node")
+	var payload services.LatencyInjectionPayload
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "milliseconds là bắt buộc"})
+		return
+	}
+	if err := h.cluster.InjectLatency(node, payload.Milliseconds); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Đã thêm artificial latency", "node": node, "milliseconds": payload.Milliseconds})
+}
+
+func (h *APIHandler) ClearLatency(c *gin.Context) {
+	node := c.Param("node")
+	if err := h.cluster.ClearLatency(node); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Đã xóa artificial latency", "node": node})
+}
+
 func (h *APIHandler) SetKey(c *gin.Context) {
 	var payload services.KeyValuePayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
@@ -52,7 +101,8 @@ func (h *APIHandler) SetKey(c *gin.Context) {
 		return
 	}
 
-	if err := h.cluster.Set(payload.Key, payload.Value); err != nil {
+	replications, err := h.cluster.Set(payload.Key, payload.Value)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -61,7 +111,7 @@ func (h *APIHandler) SetKey(c *gin.Context) {
 		"message":      "SET thành công",
 		"key":          payload.Key,
 		"value":        payload.Value,
-		"replications": []string{"Replicated to Replica1", "Replicated to Replica2"},
+		"replications": replications,
 	})
 }
 
