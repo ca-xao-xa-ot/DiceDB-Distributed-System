@@ -259,3 +259,26 @@ Qua dự án này nhóm đã tìm hiểu:
 # 📄 License
 
 Dự án được phát triển phục vụ mục đích học tập và nghiên cứu.
+
+---
+
+# 🙏 Lời cảm ơn
+
+Cảm ơn thầy/cô và mọi người đã dành thời gian theo dõi và tìm hiểu về dự án **DiceDB Distributed System**.
+
+Thông qua dự án này, nhóm đã có cơ hội nghiên cứu và áp dụng các kiến thức về:
+- Hệ thống phân tán (Distributed System)
+- Cơ sở dữ liệu phân tán
+- Kiến trúc phần mềm
+- Triển khai hệ thống bằng Docker
+- Thiết kế giao diện giám sát Dashboard
+
+Nhóm rất mong nhận được những ý kiến đóng góp để dự án có thể tiếp tục được cải thiện và phát triển hơn trong tương lai.
+
+<br>
+
+<p align="center">
+⭐ Cảm ơn bạn đã ghé thăm repository này! ⭐
+</p>
+
+---
