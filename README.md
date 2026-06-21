@@ -1,3 +1,16 @@
+<p align="center">
+  <img src="./anhdicedb.png" width="100%">
+</p>
+
+<h1 align="center">
+DiceDB Distributed System
+</h1>
+
+<p align="center">
+Hệ thống cơ sở dữ liệu phân tán hiệu năng cao với Dashboard giám sát trực quan
+</p>
+
+---
 # 🚀 DiceDB Distributed System
 
 # 👥 Thành viên nhóm
