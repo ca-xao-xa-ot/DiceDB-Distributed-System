@@ -78,9 +78,9 @@ Giao diện quản lý hệ thống cho phép:
 
 ## 1. Quản lý hệ thống
 
-✔ Hiển thị thông tin cluster. 
-✔ Theo dõi trạng thái các node.  
-✔ Kiểm tra tình trạng hoạt động của hệ thống.
+* Hiển thị thông tin cluster. 
+* Theo dõi trạng thái các node.  
+* Kiểm tra tình trạng hoạt động của hệ thống.
 
 ## 2. Monitoring
 
