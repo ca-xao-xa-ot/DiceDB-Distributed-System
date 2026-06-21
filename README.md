@@ -12,7 +12,7 @@
 
 Mục tiêu của dự án là tìm hiểu kiến trúc hệ thống phân tán, cơ chế giao tiếp giữa các node, quản lý trạng thái hệ thống và xây dựng giao diện Dashboard để giám sát hoạt động của hệ thống.
 
-Dự án được thực hiện trong khuôn khổ môn học **Phân tích và Thiết kế Phần mềm**.
+Dự án được thực hiện trong khuôn khổ môn học ** Ứng dụng phân tán **.
 
 ---
 
