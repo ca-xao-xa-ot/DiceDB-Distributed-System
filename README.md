@@ -1,85 +1,249 @@
-DiceDB
-===
+# 🚀 DiceDB Distributed System
 
-> [!CAUTION]  
-> The development on DiceDB has been paused.
-> Thank you, everyone who chipped in with contributions, it really means a ton!
+# 👥 Thành viên nhóm
+* Ngô Thị Minh Phương - 23012156
+* Nguyễn Thị Thu Giang - 23010871
 
-<a href="https://dicedb.io">![slatedb.io](https://img.shields.io/badge/site-dicedb.io-00A1FF?style=flat-square)</a>
-<a href="https://dicedb.io/get-started/installation/">![Docs](https://img.shields.io/badge/docs-00A1FF?style=flat-square)</a>
-<a target="_blank" href="https://discord.gg/6r8uXWtXh7"><img src="https://dcbadge.limes.pink/api/server/6r8uXWtXh7?style=flat" alt="discord community" /></a>
-[![License](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](LICENSE)
-![GitHub Sponsor](https://img.shields.io/github/sponsors/arpitbbhayani?label=Sponsors&logo=GitHub)
+---
 
-### What is DiceDB?
+## 📌 Giới thiệu dự án
 
-DiceDB is an open-source, fast, reactive, in-memory database optimized for modern hardware. Commonly used as a cache, it offers a familiar interface while enabling real-time data updates through query subscriptions. It delivers higher throughput and lower median latencies, making it ideal for modern workloads.
+**DiceDB Distributed System** là dự án xây dựng và nghiên cứu một hệ thống cơ sở dữ liệu phân tán dựa trên DiceDB - một hệ thống cơ sở dữ liệu trong bộ nhớ (In-memory Database) với khả năng xử lý tốc độ cao.
 
-## Get started
+Mục tiêu của dự án là tìm hiểu kiến trúc hệ thống phân tán, cơ chế giao tiếp giữa các node, quản lý trạng thái hệ thống và xây dựng giao diện Dashboard để giám sát hoạt động của hệ thống.
 
-### Setting up DiceDB with Docker
+Dự án được thực hiện trong khuôn khổ môn học **Phân tích và Thiết kế Phần mềm**.
 
-The easiest way to get started with DiceDB is using [Docker](https://www.docker.com/) by running the following command.
+---
 
-```bash
-$ docker run -p 7379:7379 dicedb/dicedb:latest
+# 🎯 Mục tiêu dự án
+
+* Tìm hiểu kiến trúc và nguyên lý hoạt động của hệ thống phân tán.
+* Nghiên cứu mô hình Database dạng In-memory.
+* Xây dựng môi trường chạy DiceDB.
+* Quản lý nhiều node trong hệ thống.
+* Theo dõi trạng thái hoạt động của các node.
+* Hiển thị thông tin hệ thống thông qua giao diện Dashboard.
+* Mô phỏng các tình huống lỗi và phục hồi trong hệ thống phân tán.
+
+---
+
+# 🏗️ Kiến trúc hệ thống
+
+Hệ thống gồm các thành phần chính:
+
+```
+                    User
+                      |
+                      |
+              Dice Dashboard
+                      |
+                      |
+              API / Backend
+                      |
+        --------------------------------
+        |              |               |
+      Node 1         Node 2          Node 3
+        |              |               |
+        --------------------------------
+              Distributed Storage
 ```
 
-The above command will start the DiceDB server running locally on the port `7379` and you can connect
-to it using [DiceDB CLI](https://github.com/DiceDB/dicedb-cli) and SDKs.
+### Các thành phần:
 
-> [!NOTE]
-> If you are looking to setup DiceDB for development or want to setup from source, refer
-> our [CONTRIBUTING/README.md](https://github.com/DiceDB/dice/blob/master/CONTRIBUTING/README.md) guide.
+### 🔹 DiceDB Server
 
-## Setting up CLI
+* Xử lý dữ liệu trong bộ nhớ.
+* Cung cấp khả năng lưu trữ và truy vấn dữ liệu nhanh.
+* Hỗ trợ mô hình hoạt động phân tán.
 
-### Using cURL
+### 🔹 Distributed Nodes
 
-The best way to connect to DiceDB is using [DiceDB CLI](https://github.com/DiceDB/dicedb-cli) and you can install it by running the following command
+* Các node trong hệ thống.
+* Trao đổi trạng thái và dữ liệu.
+* Đảm bảo hệ thống có khả năng mở rộng.
 
-```bash
-$ sudo su
-$ curl -sL https://raw.githubusercontent.com/DiceDB/dicedb-cli/refs/heads/master/install.sh | sh
+### 🔹 Dashboard
+
+Giao diện quản lý hệ thống cho phép:
+
+* Theo dõi trạng thái node.
+* Kiểm tra heartbeat.
+* Quan sát hoạt động hệ thống.
+* Quản lý và kiểm tra dữ liệu.
+
+---
+
+# ✨ Chức năng chính
+
+## 1. Quản lý hệ thống
+
+✔ Hiển thị thông tin cluster
+✔ Theo dõi trạng thái các node
+✔ Kiểm tra tình trạng hoạt động của hệ thống
+
+## 2. Monitoring
+
+Dashboard hỗ trợ:
+
+* Heartbeat monitoring
+* Node status
+* System logs
+* Replication status
+
+## 3. Distributed Database
+
+Hệ thống hỗ trợ:
+
+* Lưu trữ dữ liệu dạng Key-Value
+* Truy vấn dữ liệu nhanh
+* Quản lý dữ liệu phân tán
+
+## 4. Mô phỏng lỗi
+
+Có thể kiểm tra:
+
+* Node failure
+* Node recovery
+* Khả năng duy trì hoạt động hệ thống
+
+---
+
+# 🛠️ Công nghệ sử dụng
+
+## Backend
+
+* Golang
+* DiceDB
+* REST API
+
+## Frontend Dashboard
+
+* HTML
+* CSS
+* JavaScript
+
+## DevOps
+
+* Docker
+* Docker Compose
+
+## Version Control
+
+* Git
+* GitHub
+
+---
+
+# 📂 Cấu trúc thư mục
+
+```
+DiceDB-Distributed-System
+│
+├── cmd
+│
+├── config
+│
+├── internal
+│
+├── dice-dashboard
+│   ├── handlers
+│   ├── templates
+│   ├── static
+│   └── main.go
+│
+├── Dockerfile
+│
+├── go.mod
+│
+└── README.md
 ```
 
-If you are working on unsupported OS (as per above script), you can always follow the installation instructions mentioned in the [dicedb/cli](https://github.com/DiceDB/dicedb-cli) repository.
+---
 
-> [!NOTE]
-> If you are looking to setup DiceDB for development or want to setup from source, refer
-> our [CONTRIBUTING/README.md](https://github.com/DiceDB/dice/blob/master/CONTRIBUTING/README.md) guide.
+# ⚙️ Hướng dẫn chạy dự án
 
-## Want to contribute?
+## 1. Clone repository
 
-The Code Contribution Guidelines are published at [CONTRIBUTING/README.md](CONTRIBUTING/README.md); please read them before you start making any changes. This would allow us to have a consistent standard of coding practices and developer experience.
+```bash
+git clone <repository-url>
 
-Contributors can join the [Discord Server](https://discord.gg/6r8uXWtXh7) for quick collaboration.
+cd DiceDB-Distributed-System
+```
 
-## Sponsors
+---
 
-We are incredibly grateful to our sponsors for their generous support, which makes the development of DiceDB possible.
+# 2. Chạy DiceDB bằng Docker
 
-<a href="https://www.coderabbit.ai/?utm_source=github&utm_medium=social&utm_campaign=sponsor&utm_term=dicedb">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://www.coderabbit.ai/images/logo-white.svg">
-    <source media="(prefers-color-scheme: light)" srcset="https://www.coderabbit.ai/images/logo-orange.svg">
-    <img alt="CodeRabbit" src="https://www.coderabbit.ai/images/logo-orange.svg">
-  </picture>
-</a>
+```bash
+docker run -d \
+--name dicedb \
+-p 7379:7379 \
+dicedb/dicedb
+```
 
-## Support and Sponsor Us
+Kiểm tra container:
 
-DiceDB is a project with a very strong vision and [roadmap](https://dicedb.io/roadmap/). If you like what
-we do and find DiceDB useful, please consider supporting and [sponsoring us on GitHub](https://github.com/sponsors/arpitbbhayani).
+```bash
+docker ps
+```
 
-![GitHub Sponsor](https://img.shields.io/github/sponsors/arpitbbhayani?label=Sponsors&logo=GitHub)
+---
 
-## Contributors
+# 3. Chạy Dashboard
 
-<a href = "https://github.com/dicedb/dice/graphs/contributors">
-  <img src = "https://contrib.rocks/image?repo=dicedb/dice"/>
-</a>
+Di chuyển vào thư mục:
 
-## License
+```bash
+cd dice-dashboard
+```
 
-This project is licensed under the BSD 3-Clause License. See the [LICENSE](LICENSE) file for details.
+Cài đặt dependencies:
+
+```bash
+go mod tidy
+```
+
+Chạy hệ thống:
+
+```bash
+go run cmd/main.go
+```
+
+---
+
+# 4. Truy cập giao diện
+
+Mở trình duyệt:
+
+```
+http://localhost:8080
+```
+
+---
+
+# 🎥 Demo Sản Phẩm
+
+Video demo hệ thống:
+
+👉 [Xem Video Demo](https://drive.google.com/drive/folders/1opp3j_PYhNYhlv258h5p-5itZmBeEd8t?usp=sharing]
+
+---
+
+
+# 📚 Kiến thức đạt được
+
+Qua dự án này nhóm đã tìm hiểu:
+
+* Kiến trúc hệ thống phân tán.
+* Cơ chế giao tiếp giữa các node.
+* Quản lý trạng thái trong distributed system.
+* Cách triển khai ứng dụng bằng Docker.
+* Thiết kế và xây dựng Dashboard giám sát hệ thống.
+
+---
+
+
+# 📄 License
+
+Dự án được phát triển phục vụ mục đích học tập và nghiên cứu.
