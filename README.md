@@ -11,7 +11,6 @@ Hệ thống cơ sở dữ liệu phân tán hiệu năng cao với Dashboard gi
 </p>
 
 ---
-# 🚀 DiceDB Distributed System
 
 # 👥 Thành viên nhóm
 * Ngô Thị Minh Phương - 23012156
